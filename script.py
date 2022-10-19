@@ -77,17 +77,23 @@ def create_dendrite(in_file, crs=4326, out_file='dendrite.geojson', type='lines'
 
     dendrite = gpd.GeoDataFrame(columns=['cluster', 'level', 'geometry'], geometry='geometry')
     for i in range(1, 6):
-        lines = data.loc[data[f'line{i}'] != '', [f'cluster{i}', f'line{i}']]
-        lines.rename(columns={f'cluster{i}':'cluster'}, inplace=True)
+        lines = data.loc[data[f'line{i}'] != '', ['fid', f'nearest{i}', f'cluster{i}', f'line{i}']]
+        lines.rename(columns={f'cluster{i}':'cluster',f'nearest{i}':'nearest'}, inplace=True)
         lines['level'] = i
         lines['geometry'] = gpd.GeoSeries.from_wkt(lines[f'line{i}'])
-        dendrite = dendrite.append(gpd.GeoDataFrame(lines[['cluster', 'level', 'geometry']], geometry='geometry'))
+        dendrite = dendrite.append(gpd.GeoDataFrame(lines[['fid', 'nearest', 'cluster', 'level', 'geometry']], geometry='geometry'))
     
     if type == 'lines':
         print(dendrite)
         dendrite.to_file(out_file, driver='GeoJSON', crs=2180)
     elif type == 'points':
         print(data)
+        for i in range(0, data.shape[0]):
+            to = data.loc[data['nearest1'] == i + 1, :].shape[0] + data.loc[data['nearest2'] == i + 1, :].shape[0] + data.loc[data['nearest3'] == i + 1, :].shape[0] + data.loc[data['nearest4'] == i + 1, :].shape[0] + data.loc[data['nearest5'] == i + 1, :].shape[0]
+            conns = 1 + (1 if data.loc[i, 'nearest2'] != -1 else 0) + (1 if data.loc[i, 'nearest3'] != -1 else 0) + (1 if data.loc[i, 'nearest4'] != -1 else 0) + (1 if data.loc[i, 'nearest5'] != -1 else 0)
+            data.loc[i, 'connections'] =  to + conns
+        print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża', 'Skępe', 'Lipno'])])
         data.to_file(out_file, driver='GeoJSON', crs=2180)
 
 create_dendrite(in_file='citiesPL.geojson', out_file='dendrite.geojson', type='lines')
+#create_dendrite(in_file='citiesPL.geojson', out_file='dendrite_points.geojson', type='points')
