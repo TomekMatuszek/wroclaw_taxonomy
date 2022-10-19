@@ -80,4 +80,18 @@ for i in range(1, 6):
             data.loc[j, f'line{i}'] = ''
 
 print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża', 'Skępe', 'Lipno'])])
-data.to_csv('wkt.csv')
+#data.to_csv('wkt.csv')
+
+dendrite = gpd.GeoDataFrame(columns=['cluster', 'level', 'geometry'], geometry='geometry')
+for i in range(1, 6):
+    lines = data.loc[data[f'line{i}'] != '', [f'cluster{i}', f'line{i}']]
+    lines.rename(columns={f'cluster{i}':'cluster'}, inplace=True)
+    lines['level'] = i
+    lines['geometry'] = gpd.GeoSeries.from_wkt(lines[f'line{i}'])
+    dendrite = dendrite.append(gpd.GeoDataFrame(lines[['cluster', 'level', 'geometry']], geometry='geometry'))
+
+#dendrite = data.loc[data['line1'] != '', ['cluster1', 'line1']]
+#dendrite['geometry'] = gpd.GeoSeries.from_wkt(dendrite['line1'])
+#dendrite = gpd.GeoDataFrame(dendrite[['cluster1', 'geometry']], geometry='geometry')
+print(dendrite)
+dendrite.to_file('dendrite.geojson', driver='GeoJSON', crs=2180)
