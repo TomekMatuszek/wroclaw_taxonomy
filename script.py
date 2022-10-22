@@ -18,7 +18,6 @@ def create_dendrite(in_file, crs=4326, out_file='dendrite.geojson', type='lines'
     print(data)
     data = data.to_crs(epsg=2180)
     distance_matrix = np.array(data.geometry.apply(lambda x: data.distance(x).astype(np.int64)))
-    print(distance_matrix)
 
     # wyznaczenie najbliższych sąsiadów
     data['nearest1'] = np.argmin(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1) + 1
@@ -57,8 +56,6 @@ def create_dendrite(in_file, crs=4326, out_file='dendrite.geojson', type='lines'
         # zgrupowanie klastrów w większe klastry
         for i in range(0, data.shape[0]):
             data.loc[data[f'cluster{j}'] == data.loc[i, f'cluster{j-1}'], f'cluster{j}'] = data.loc[i, f'cluster{j}']
-
-        print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża', 'Skępe', 'Lipno'])])
 
         # czyszczenie macierzy
         clear_matrix(data, distance_matrix, f'cluster{j}')
