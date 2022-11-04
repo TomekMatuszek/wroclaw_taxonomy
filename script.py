@@ -88,6 +88,7 @@ def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson'
     #print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża', 'Skępe', 'Lipno'])])
     #data.to_csv('wkt.csv')
 
+    # tworzenie warstwy liniowej z połączeniami dla każdego poziomu
     dendrite = gpd.GeoDataFrame(columns=['cluster', 'level', 'geometry'], geometry='geometry')
     for i in range(1, lvl):
         lines = data.loc[data[f'line{i}'] != '', ['fid', f'nearest{i}', f'cluster{i}', f'line{i}']]
@@ -96,12 +97,14 @@ def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson'
         lines['geometry'] = gpd.GeoSeries.from_wkt(lines[f'line{i}'])
         dendrite = dendrite.append(gpd.GeoDataFrame(lines[['fid', 'nearest', 'cluster', 'level', 'geometry']], geometry='geometry'))
     
+    # eksport warstwy wynikowej
     if type == 'lines':
         #print(dendrite)
         dendrite.to_file(out_file, driver='GeoJSON', crs=crs)
         return dendrite
     elif type == 'points':
         #print(data)
+        # liczenie połączeń rozchodzących się z punktu
         for i in range(0, data.shape[0]):
             to_ids = {x for lst in [data.loc[data[f'nearest{j}'] == i + 1, 'fid'].to_list() for j in range(1, lvl)] for x in lst}
             from_ids = set([data.loc[i, f'nearest{j}'] for j in range(1, lvl)]) - {-1}
