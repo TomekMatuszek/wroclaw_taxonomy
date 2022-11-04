@@ -16,6 +16,8 @@ def clear_matrix(data, matrix, column):
 def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson', type='lines'):
     # wczytanie danych punktowych i stworzenie macierzy
     data = gpd.read_file(in_file, driver = 'GeoJSON')
+    if data.crs.to_authority()[1] != '4326':
+        data.to_crs(epsg=4326, inplace=True)
     zone = round((data.centroid.x[0] + 180) / 6)
     if data.centroid.y[0] >= 0:
         crs = int("326" + str(zone))
@@ -24,7 +26,7 @@ def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson'
 
     #print(data)
     #crs=2180
-    data = data.to_crs(epsg=crs)
+    data.to_crs(epsg=crs, inplace=True)
     data['lat'] = (data.centroid.y)
     data['lon'] = (data.centroid.x)
     print(data)
