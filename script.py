@@ -99,5 +99,5 @@ def create_dendrite(in_file, crs=3857, columns=['lat', 'lon'], out_file='dendrit
         data.to_file(out_file, driver='GeoJSON', crs=crs)
         return data
 
-#create_dendrite(in_file='citiesPL.geojson', out_file='dendrite.geojson', type='lines')
-create_dendrite(in_file='citiesPL_pop.geojson', columns=['pop'], out_file='dendrite_points.geojson', type='points')
+create_dendrite(in_file='citiesPL_pop.geojson', columns=['pop', 'lat', 'lon'], out_file='dendrite.geojson', type='lines')
+create_dendrite(in_file='citiesPL_pop.geojson', columns=['pop', 'lat', 'lon'], out_file='dendrite_points.geojson', type='points')
