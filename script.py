@@ -3,6 +3,7 @@ import geopandas as gpd
 import numpy as np
 import numpy.ma as ma
 from shapely.geometry import LineString
+from scipy.spatial.distance import cdist
 
 # funkcja czyszcząca macierz odległości
 def clear_matrix(data, matrix, column):
@@ -12,12 +13,18 @@ def clear_matrix(data, matrix, column):
         matrix[i, indexes] = 0
         matrix[indexes, i] = 0
 
-def create_dendrite(in_file, crs=4326, out_file='dendrite.geojson', type='lines'):
+def create_dendrite(in_file, crs=3857, columns=['lat', 'lon'], out_file='dendrite.geojson', type='lines'):
     # wczytanie danych punktowych i stworzenie macierzy
     data = gpd.read_file(in_file, driver = 'GeoJSON')
-    print(data)
-    data = data.to_crs(epsg=2180)
-    distance_matrix = np.array(data.geometry.apply(lambda x: data.distance(x).astype(np.int64)))
+    #print(data)
+    data = data.to_crs(epsg=crs)
+    data['lat'] = (data.centroid.x)
+    data['lon'] = (data.centroid.y)
+
+    #distance_matrix = np.array(data.geometry.apply(lambda x: data.distance(x).astype(np.int64)))
+    #print(distance_matrix)
+    distance_matrix = np.array(cdist(data.loc[:,columns], data.loc[:,columns], metric='euclidean'))
+    print(distance_matrix)
 
     # wyznaczenie najbliższych sąsiadów
     data['nearest1'] = np.argmin(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1) + 1
@@ -30,7 +37,7 @@ def create_dendrite(in_file, crs=4326, out_file='dendrite.geojson', type='lines'
     # czyszczenie macierzy ze stworzonych połączeń
     clear_matrix(data, distance_matrix, 'cluster1')
 
-    print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża'])])
+    #print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża'])])
 
     # powtarzanie łączenia aż do otrzymania jednego klastra
     j = 2
@@ -69,7 +76,7 @@ def create_dendrite(in_file, crs=4326, out_file='dendrite.geojson', type='lines'
             else:
                 data.loc[j, f'line{i}'] = ''
 
-    print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża', 'Skępe', 'Lipno'])])
+    #print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża', 'Skępe', 'Lipno'])])
     #data.to_csv('wkt.csv')
 
     dendrite = gpd.GeoDataFrame(columns=['cluster', 'level', 'geometry'], geometry='geometry')
@@ -82,15 +89,15 @@ def create_dendrite(in_file, crs=4326, out_file='dendrite.geojson', type='lines'
     
     if type == 'lines':
         print(dendrite)
-        dendrite.to_file(out_file, driver='GeoJSON', crs=2180)
+        dendrite.to_file(out_file, driver='GeoJSON', crs=crs)
     elif type == 'points':
         print(data)
         for i in range(0, data.shape[0]):
             to = data.loc[data['nearest1'] == i + 1, :].shape[0] + data.loc[data['nearest2'] == i + 1, :].shape[0] + data.loc[data['nearest3'] == i + 1, :].shape[0] + data.loc[data['nearest4'] == i + 1, :].shape[0] + data.loc[data['nearest5'] == i + 1, :].shape[0]
             conns = 1 + (1 if data.loc[i, 'nearest2'] != -1 else 0) + (1 if data.loc[i, 'nearest3'] != -1 else 0) + (1 if data.loc[i, 'nearest4'] != -1 else 0) + (1 if data.loc[i, 'nearest5'] != -1 else 0)
             data.loc[i, 'connections'] =  to + conns
-        print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża', 'Skępe', 'Lipno'])])
-        data.to_file(out_file, driver='GeoJSON', crs=2180)
+        #print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża', 'Skępe', 'Lipno'])])
+        data.to_file(out_file, driver='GeoJSON', crs=crs)
 
 create_dendrite(in_file='citiesPL.geojson', out_file='dendrite.geojson', type='lines')
 #create_dendrite(in_file='citiesPL.geojson', out_file='dendrite_points.geojson', type='points')
