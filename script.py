@@ -22,10 +22,9 @@ def create_dendrite(in_file, crs=3857, columns=['lat', 'lon'], out_file='dendrit
     data['lon'] = (data.centroid.y)
 
     #distance_matrix = np.array(data.geometry.apply(lambda x: data.distance(x).astype(np.int64)))
-    #print(distance_matrix)
     distance_matrix = np.array(cdist(data.loc[:,columns], data.loc[:,columns], metric='euclidean'))
     print(distance_matrix)
-
+    
     # wyznaczenie najbliższych sąsiadów
     data['nearest1'] = np.argmin(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1) + 1
     data['cluster1'] = np.argmin(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1) + 1
@@ -88,16 +87,17 @@ def create_dendrite(in_file, crs=3857, columns=['lat', 'lon'], out_file='dendrit
         dendrite = dendrite.append(gpd.GeoDataFrame(lines[['fid', 'nearest', 'cluster', 'level', 'geometry']], geometry='geometry'))
     
     if type == 'lines':
-        print(dendrite)
+        #print(dendrite)
         dendrite.to_file(out_file, driver='GeoJSON', crs=crs)
+        return dendrite
     elif type == 'points':
-        print(data)
+        #print(data)
         for i in range(0, data.shape[0]):
             to = data.loc[data['nearest1'] == i + 1, :].shape[0] + data.loc[data['nearest2'] == i + 1, :].shape[0] + data.loc[data['nearest3'] == i + 1, :].shape[0] + data.loc[data['nearest4'] == i + 1, :].shape[0] + data.loc[data['nearest5'] == i + 1, :].shape[0]
             conns = 1 + (1 if data.loc[i, 'nearest2'] != -1 else 0) + (1 if data.loc[i, 'nearest3'] != -1 else 0) + (1 if data.loc[i, 'nearest4'] != -1 else 0) + (1 if data.loc[i, 'nearest5'] != -1 else 0)
             data.loc[i, 'connections'] =  to + conns
-        #print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża', 'Skępe', 'Lipno'])])
         data.to_file(out_file, driver='GeoJSON', crs=crs)
+        return data
 
-create_dendrite(in_file='citiesPL.geojson', out_file='dendrite.geojson', type='lines')
-#create_dendrite(in_file='citiesPL.geojson', out_file='dendrite_points.geojson', type='points')
+#create_dendrite(in_file='citiesPL.geojson', out_file='dendrite.geojson', type='lines')
+create_dendrite(in_file='citiesPL_pop.geojson', columns=['pop'], out_file='dendrite_points.geojson', type='points')
