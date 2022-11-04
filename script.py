@@ -49,36 +49,36 @@ def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson'
     #print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża'])])
 
     # powtarzanie łączenia aż do otrzymania jednego klastra
-    j = 2
-    while data[f'cluster{j-1}'].unique().shape[0] > 1:
+    lvl = 2
+    while data[f'cluster{lvl-1}'].unique().shape[0] > 1:
         # wyznaczenie najbliższego punktu wraz z odległością po maskowaniu macierzy z zer
-        data[f'nearest{j}'] = np.argmin(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1) + 1
-        data[f'nearest{j}_dist'] = np.min(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1)
+        data[f'nearest{lvl}'] = np.argmin(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1) + 1
+        data[f'nearest{lvl}_dist'] = np.min(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1)
 
         # pozostawienie tylko najbliższych odległości dla każdego klastra
-        for i in data[f'cluster{j-1}'].unique():
-            cluster = data.loc[data[f'cluster{j-1}'] == i, :]
-            nearest = cluster.loc[cluster[f'nearest{j}_dist'] == np.min(cluster[f'nearest{j}_dist']), 'fid']
-            data.loc[(data['fid'] != nearest.values[0]) & (data[f'cluster{j-1}'] == i), f'nearest{j}'] = -1
+        for i in data[f'cluster{lvl-1}'].unique():
+            cluster = data.loc[data[f'cluster{lvl-1}'] == i, :]
+            nearest = cluster.loc[cluster[f'nearest{lvl}_dist'] == np.min(cluster[f'nearest{lvl}_dist']), 'fid']
+            data.loc[(data['fid'] != nearest.values[0]) & (data[f'cluster{lvl-1}'] == i), f'nearest{lvl}'] = -1
 
         # przyporządkowanie numeru klastra do którego należy najbliższy sąsiad
         for i in range(0, data.shape[0]):
-            if data.loc[i, f'nearest{j}'] == -1:
+            if data.loc[i, f'nearest{lvl}'] == -1:
                 continue
             else:
-                nearest_cluster = data.loc[data['fid'] == data.loc[i, f'nearest{j}'], f'cluster{j-1}']
-                data.loc[data[f'cluster{j-1}'] == data.loc[i, f'cluster{j-1}'], f'cluster{j}'] = nearest_cluster.values[0]
+                nearest_cluster = data.loc[data['fid'] == data.loc[i, f'nearest{lvl}'], f'cluster{lvl-1}']
+                data.loc[data[f'cluster{lvl-1}'] == data.loc[i, f'cluster{lvl-1}'], f'cluster{lvl}'] = nearest_cluster.values[0]
 
         # zgrupowanie klastrów w większe klastry
         for i in range(0, data.shape[0]):
-            data.loc[data[f'cluster{j}'] == data.loc[i, f'cluster{j-1}'], f'cluster{j}'] = data.loc[i, f'cluster{j}']
+            data.loc[data[f'cluster{lvl}'] == data.loc[i, f'cluster{lvl-1}'], f'cluster{lvl}'] = data.loc[i, f'cluster{lvl}']
 
         # czyszczenie macierzy
-        clear_matrix(data, distance_matrix, f'cluster{j}')
-        j += 1
+        clear_matrix(data, distance_matrix, f'cluster{lvl}')
+        lvl += 1
 
     # tworzenie linestringów dla połączeń każdego rzędu
-    for i in range(1, 6):
+    for i in range(1, lvl):
         for j in range(0, data.shape[0]):
             if data.loc[j, f'nearest{i}'] != -1:
                 data.loc[j, f'line{i}'] = LineString([data.loc[j, 'geometry'], data.loc[data['fid'] == data.loc[j, f'nearest{i}'], 'geometry'].values[0]]).wkt
@@ -89,7 +89,7 @@ def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson'
     #data.to_csv('wkt.csv')
 
     dendrite = gpd.GeoDataFrame(columns=['cluster', 'level', 'geometry'], geometry='geometry')
-    for i in range(1, 6):
+    for i in range(1, lvl):
         lines = data.loc[data[f'line{i}'] != '', ['fid', f'nearest{i}', f'cluster{i}', f'line{i}']]
         lines.rename(columns={f'cluster{i}':'cluster',f'nearest{i}':'nearest'}, inplace=True)
         lines['level'] = i
@@ -103,21 +103,21 @@ def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson'
     elif type == 'points':
         #print(data)
         for i in range(0, data.shape[0]):
-            to = data.loc[data['nearest1'] == i + 1, :].shape[0] + data.loc[data['nearest2'] == i + 1, :].shape[0] + data.loc[data['nearest3'] == i + 1, :].shape[0] + data.loc[data['nearest4'] == i + 1, :].shape[0] + data.loc[data['nearest5'] == i + 1, :].shape[0]
-            conns = 1 + (1 if data.loc[i, 'nearest2'] != -1 else 0) + (1 if data.loc[i, 'nearest3'] != -1 else 0) + (1 if data.loc[i, 'nearest4'] != -1 else 0) + (1 if data.loc[i, 'nearest5'] != -1 else 0)
-            data.loc[i, 'connections'] =  to + conns
+            to_ids = {x for lst in [data.loc[data[f'nearest{j}'] == i + 1, 'fid'].to_list() for j in range(1, lvl)] for x in lst}
+            from_ids = set([data.loc[i, f'nearest{j}'] for j in range(1, lvl)]) - {-1}
+            data.loc[i, 'connections'] =  len(to_ids | from_ids)
         data.to_file(out_file, driver='GeoJSON', crs=crs)
         return data
 
 create_dendrite(
     in_file='citiesPL_pop.geojson',
     #columns=['pop', 'lat', 'lon'],
-    out_file='dendrite2.geojson',
+    out_file='dendrite.geojson',
     type='lines'
 )
 create_dendrite(
     in_file='citiesPL_pop.geojson',
     #columns=['pop', 'lat', 'lon'],
-    out_file='dendrite_points2.geojson',
+    out_file='dendrite_points.geojson',
     type='points'
 )
