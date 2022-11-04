@@ -13,13 +13,21 @@ def clear_matrix(data, matrix, column):
         matrix[i, indexes] = 0
         matrix[indexes, i] = 0
 
-def create_dendrite(in_file, crs=3857, columns=['lat', 'lon'], out_file='dendrite.geojson', type='lines'):
+def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson', type='lines'):
     # wczytanie danych punktowych i stworzenie macierzy
     data = gpd.read_file(in_file, driver = 'GeoJSON')
+    zone = round((data.centroid.x[0] + 180) / 6)
+    if data.centroid.y[0] >= 0:
+        crs = int("326" + str(zone))
+    else:
+        crs = int("327" + str(zone))
+
     #print(data)
+    #crs=2180
     data = data.to_crs(epsg=crs)
-    data['lat'] = (data.centroid.x)
-    data['lon'] = (data.centroid.y)
+    data['lat'] = (data.centroid.y)
+    data['lon'] = (data.centroid.x)
+    print(data)
 
     #distance_matrix = np.array(data.geometry.apply(lambda x: data.distance(x).astype(np.int64)))
     distance_matrix = np.array(cdist(data.loc[:,columns], data.loc[:,columns], metric='euclidean'))
@@ -99,5 +107,15 @@ def create_dendrite(in_file, crs=3857, columns=['lat', 'lon'], out_file='dendrit
         data.to_file(out_file, driver='GeoJSON', crs=crs)
         return data
 
-create_dendrite(in_file='citiesPL_pop.geojson', columns=['pop', 'lat', 'lon'], out_file='dendrite.geojson', type='lines')
-create_dendrite(in_file='citiesPL_pop.geojson', columns=['pop', 'lat', 'lon'], out_file='dendrite_points.geojson', type='points')
+create_dendrite(
+    in_file='citiesPL_pop.geojson',
+    #columns=['pop', 'lat', 'lon'],
+    out_file='dendrite2.geojson',
+    type='lines'
+)
+create_dendrite(
+    in_file='citiesPL_pop.geojson',
+    #columns=['pop', 'lat', 'lon'],
+    out_file='dendrite_points2.geojson',
+    type='points'
+)
