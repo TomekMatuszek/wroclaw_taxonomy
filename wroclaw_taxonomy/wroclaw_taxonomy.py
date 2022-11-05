@@ -14,8 +14,15 @@ def clear_matrix(data, matrix, column):
         matrix[indexes, i] = 0
 
 def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson', type='lines'):
-    # wczytanie danych punktowych i stworzenie macierzy
-    data = gpd.read_file(in_file, driver = 'GeoJSON')
+    # wczytanie danych punktowych
+    if isinstance(in_file, gpd.GeoDataFrame):
+        data = in_file
+    elif isinstance(in_file, str):
+        data = gpd.read_file(in_file, driver = 'GeoJSON')
+    else:
+        raise TypeError('Argument in_file has to be either string or GeoDataFrame')
+    
+    # zmiana układu współrzędnych
     if data.crs.to_authority()[1] != '4326':
         data.to_crs(epsg=4326, inplace=True)
     zone = round((data.centroid.x[0] + 180) / 6)
@@ -25,12 +32,13 @@ def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson'
         crs = int("327" + str(zone))
 
     #print(data)
-    #crs=2180
     data.to_crs(epsg=crs, inplace=True)
     data['lat'] = (data.centroid.y)
     data['lon'] = (data.centroid.x)
     print(data)
 
+    assert isinstance(columns, list), 'Argument columns has to be a list'
+    # stworzenie macierzy odległości
     #distance_matrix = np.array(data.geometry.apply(lambda x: data.distance(x).astype(np.int64)))
     distance_matrix = np.array(cdist(data.loc[:,columns], data.loc[:,columns], metric='euclidean'))
     print(distance_matrix)
