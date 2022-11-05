@@ -1,0 +1,3 @@
+1.0.1
+
+['C:\\cibw\\python\\python.3.10.1\\tools\\Scripts\\delvewheel', 'repair', '--add-path', 'C:/vcpkg/installed/x64-windows/bin', '-w', 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\cibuildwheelt4_fqr5j\\repaired_wheel', 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\cibuildwheelt4_fqr5j\\built_wheel\\pyogrio-0.4.2-cp310-cp310-win_amd64.whl']
