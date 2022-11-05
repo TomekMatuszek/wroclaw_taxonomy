@@ -17,5 +17,5 @@ setuptools.setup(
     },
     license='MIT',
     packages=['wroclaw_taxonomy'],
-    install_requires=['numpy', 'shapely', 'scipy', 'pandas', 'fiona', 'pyproj'],
+    install_requires=['numpy', 'shapely', 'scipy', 'pandas', 'fiona', 'pyproj', 'geopandas'],
 )

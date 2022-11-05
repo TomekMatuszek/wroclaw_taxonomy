@@ -1,3 +1,5 @@
 /qgis
 /wroclaw_venv
 /__pycache__
+/test
+/wroclaw_taxonomy/__pycache__
