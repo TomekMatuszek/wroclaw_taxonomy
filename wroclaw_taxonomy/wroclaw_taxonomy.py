@@ -2,6 +2,7 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 import numpy.ma as ma
+import warnings
 from shapely.geometry import LineString
 from scipy.spatial.distance import cdist
 
@@ -13,7 +14,24 @@ def clear_matrix(data, matrix, column):
         matrix[i, indexes] = 0
         matrix[indexes, i] = 0
 
-def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson', type='lines'):
+def classify_pop(number, exp):
+    if number < 10000:
+        return exp ** 1
+    elif number < 25000:
+        return exp ** 2
+    elif number < 50000:
+        return exp ** 3
+    elif number < 100000:
+        return exp ** 4
+    elif number < 250000:
+        return exp ** 5
+    elif number < 500000:
+        return exp ** 6
+    elif number < 1000000:
+        return exp ** 7
+    else: return exp ** 8
+
+def create_dendrite(in_file, columns=['lat', 'lon'], normalize=False, out_file='dendrite.geojson', type='lines'):
     # wczytanie danych punktowych
     if isinstance(in_file, gpd.GeoDataFrame):
         data = in_file
@@ -34,15 +52,24 @@ def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson'
     #print(data)
     data.to_crs(epsg=crs, inplace=True)
     data['fid'] = [i for i in range(1, data.shape[0] + 1)]
+    data['pop_class'] = [classify_pop(pop, 1.5) for pop in data['pop']]
     data['lat'] = data.centroid.y
     data['lon'] = data.centroid.x
     print(data)
 
     assert isinstance(columns, list), 'Argument columns has to be a list'
     # stworzenie macierzy odległości
+    if normalize == True:
+        if any(item in ('lat', 'lon') for item in columns):
+            warnings.warn('You are normalizing coordinate values. It may slightly change results.')
+        for_matrix = data.loc[:,columns].apply(lambda x: (x-x.mean())/ x.std(), axis=0)
+    else:
+        for_matrix = data.loc[:,columns]
+    
     #distance_matrix = np.array(data.geometry.apply(lambda x: data.distance(x).astype(np.int64)))
-    distance_matrix = np.array(cdist(data.loc[:,columns], data.loc[:,columns], metric='euclidean'))
+    distance_matrix = np.array(cdist(for_matrix, for_matrix, metric='euclidean'))
     print(distance_matrix)
+    #distance_matrix = distance_matrix / data['pop_class'].to_list()
     
     # wyznaczenie najbliższych sąsiadów
     data['nearest1'] = np.argmin(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1) + 1
