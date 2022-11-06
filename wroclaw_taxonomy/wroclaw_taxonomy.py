@@ -33,8 +33,9 @@ def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson'
 
     #print(data)
     data.to_crs(epsg=crs, inplace=True)
-    data['lat'] = (data.centroid.y)
-    data['lon'] = (data.centroid.x)
+    data['fid'] = [i for i in range(1, data.shape[0] + 1)]
+    data['lat'] = data.centroid.y
+    data['lon'] = data.centroid.x
     print(data)
 
     assert isinstance(columns, list), 'Argument columns has to be a list'
@@ -89,12 +90,11 @@ def create_dendrite(in_file, columns=['lat', 'lon'], out_file='dendrite.geojson'
     for i in range(1, lvl):
         for j in range(0, data.shape[0]):
             if data.loc[j, f'nearest{i}'] != -1:
-                data.loc[j, f'line{i}'] = LineString([data.loc[j, 'geometry'], data.loc[data['fid'] == data.loc[j, f'nearest{i}'], 'geometry'].values[0]]).wkt
+                data.loc[j, f'line{i}'] = LineString([data.loc[j, 'geometry'].centroid, data.loc[data['fid'] == data.loc[j, f'nearest{i}'], 'geometry'].values[0].centroid]).wkt
             else:
                 data.loc[j, f'line{i}'] = ''
 
     #print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża', 'Skępe', 'Lipno'])])
-    #data.to_csv('wkt.csv')
 
     # tworzenie warstwy liniowej z połączeniami dla każdego poziomu
     dendrite = gpd.GeoDataFrame(columns=['cluster', 'level', 'geometry'], geometry='geometry')
