@@ -52,7 +52,7 @@ def create_dendrite(in_file, columns=['lat', 'lon'], normalize=False, out_file='
     #print(data)
     data.to_crs(epsg=crs, inplace=True)
     data['fid'] = [i for i in range(1, data.shape[0] + 1)]
-    data['pop_class'] = [classify_pop(pop, 1.5) for pop in data['pop']]
+    #data['pop_class'] = [classify_pop(pop, 1.5) for pop in data['pop']]
     data['lat'] = data.centroid.y
     data['lon'] = data.centroid.x
     print(data)
@@ -130,7 +130,7 @@ def create_dendrite(in_file, columns=['lat', 'lon'], normalize=False, out_file='
         lines.rename(columns={f'cluster{i}':'cluster',f'nearest{i}':'nearest'}, inplace=True)
         lines['level'] = i
         lines['geometry'] = gpd.GeoSeries.from_wkt(lines[f'line{i}'])
-        dendrite = dendrite.append(gpd.GeoDataFrame(lines[['fid', 'nearest', 'cluster', 'level', 'geometry']], geometry='geometry'))
+        dendrite = pd.concat([dendrite, gpd.GeoDataFrame(lines[['fid', 'nearest', 'cluster', 'level', 'geometry']], geometry='geometry')])
     
     # eksport warstwy wynikowej
     if type == 'lines':
