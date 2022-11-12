@@ -13,6 +13,7 @@ def clear_matrix(data, matrix, column):
         indexes = data.index[data[column] == cluster].tolist()
         matrix[i, indexes] = 0
         matrix[indexes, i] = 0
+    return matrix
 
 def classify_pop(number, exp):
     if number < 10000:
@@ -31,7 +32,7 @@ def classify_pop(number, exp):
         return exp ** 7
     else: return exp ** 8
 
-def create_dendrite(in_file, columns=['lat', 'lon'], normalize=False, out_file='dendrite.geojson', type='lines'):
+def create_dendrite(in_file, columns:list=['lat', 'lon'], normalize=False, out_file:str='dendrite.geojson', type:str='lines'):
     # wczytanie danych punktowych
     if isinstance(in_file, gpd.GeoDataFrame):
         data = in_file
@@ -80,7 +81,7 @@ def create_dendrite(in_file, columns=['lat', 'lon'], normalize=False, out_file='
         data.loc[data['cluster1'] == i + 1, 'cluster1'] = data.loc[i, 'cluster1']
 
     # czyszczenie macierzy ze stworzonych połączeń
-    clear_matrix(data, distance_matrix, 'cluster1')
+    distance_matrix = clear_matrix(data, distance_matrix, 'cluster1')
 
     #print(data[data['naz_glowna'].isin(['Aleksandrów Kujawski', 'Ciechocinek', 'Nieszawa', 'Toruń', 'Chełmża'])])
 
@@ -110,7 +111,7 @@ def create_dendrite(in_file, columns=['lat', 'lon'], normalize=False, out_file='
             data.loc[data[f'cluster{lvl}'] == data.loc[i, f'cluster{lvl-1}'], f'cluster{lvl}'] = data.loc[i, f'cluster{lvl}']
 
         # czyszczenie macierzy
-        clear_matrix(data, distance_matrix, f'cluster{lvl}')
+        distance_matrix = clear_matrix(data, distance_matrix, f'cluster{lvl}')
         lvl += 1
 
     # tworzenie linestringów dla połączeń każdego rzędu

@@ -1,4 +1,4 @@
-from wroclaw_taxonomy import create_dendrite
+from wroclaw_taxonomy.wroclaw_taxonomy import create_dendrite
 
 create_dendrite(
     in_file='data/citiesPL_pop.geojson',

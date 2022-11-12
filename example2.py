@@ -1,7 +1,7 @@
 import numpy as np
 import geopandas as gpd
 import matplotlib.pyplot as plt
-from wroclaw_taxonomy import create_dendrite
+from wroclaw_taxonomy.wroclaw_taxonomy import create_dendrite
 
 cities = gpd.read_file('data/citiesPL_pop.geojson', driver = 'GeoJSON')
 dendrite = create_dendrite(
