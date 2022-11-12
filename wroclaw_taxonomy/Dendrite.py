@@ -138,6 +138,10 @@ class Dendrite:
         for lvl, lwd in zip(range(1, max(dendrite['level']) + 1), np.arange(0.5, 2 + (1.5 / (max(dendrite['level']) + 1)), (1.5 / (max(dendrite['level']) + 1)))):
             dendrite[dendrite['level'] == lvl].plot(ax=ax, color='#222222',  linewidth=lwd, zorder=5)
 
-        objects.plot(ax=ax, color='#ff0000', markersize=(objects['connections'] - 0.75) * 2, zorder=10)
+        if objects.geom_type[0] == 'Point':
+            objects.plot(ax=ax, color='#ff0000', markersize=(objects['connections'] - 0.75) * 2, zorder=10)
+        elif objects.geom_type[0] == 'MultiPolygon':
+            objects.plot(ax=ax, color='#ff0000', cmap='Reds', column='connections', zorder=1)
+        
         plt.show()
 
