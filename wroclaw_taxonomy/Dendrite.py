@@ -115,11 +115,11 @@ class Dendrite:
             data.loc[i, 'connections'] =  len(to_ids | from_ids)
         
         self.results = data
-    def export_points(self, out_file='dendrite_points.geojson'):
+    def export_objects(self, out_file='dendrite_points.geojson'):
         results = self.results
         results.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return results
-    def export_lines(self, out_file='dendrite.geojson'):
+    def export_dendrite(self, out_file='dendrite.geojson'):
         results = self.results
         dendrite = gpd.GeoDataFrame(columns=['cluster', 'level', 'geometry'], geometry='geometry')
         for i in range(1, self.levels):
