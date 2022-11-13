@@ -13,18 +13,15 @@ You can install this package by using below pip install command in terminal:
 ## Examples
 
 ```python
-from wroclaw_taxonomy import create_dendrite
+from wroclaw_taxonomy import Dendrite
 
-create_dendrite(
-    in_file='citiesPL_pop.geojson',
-    #columns=['pop', 'lat', 'lon'],
-    out_file='dendrite.geojson',
-    type='lines'
-)
-create_dendrite(
-    in_file='citiesPL_pop.geojson',
-    #columns=['pop', 'lat', 'lon'],
-    out_file='dendrite_points.geojson',
-    type='points'
-)
+dendrite = Dendrite(src='data/citiesPL_pop.geojson')
+dendrite.calculate(columns=['lat', 'lon'], normalize=False)
+
+dendrite.export_objects(out_file='dendrite_points.geojson')
+dendrite.export_dendrite(out_file='dendrite.geojson')
+
+dendrite.plot()
 ```
+
+[img/dendrite.png](img/dendrite.png)
