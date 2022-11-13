@@ -2,7 +2,7 @@
 
 ## About
 
-This package consists of one function called `create_dendrite` which groupes set of points into clusters based on Wroclaw taxonomy method.
+This package consists of one class called `Dendrite` which groupes set of points into clusters based on Wroclaw taxonomy method.
 
 ## Installation
 
