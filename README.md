@@ -24,4 +24,4 @@ dendrite.export_dendrite(out_file='dendrite.geojson')
 dendrite.plot()
 ```
 
-[img/dendrite.png](img/dendrite.png)
+![](img/dendrite.png)
