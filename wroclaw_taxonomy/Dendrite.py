@@ -113,24 +113,24 @@ class Dendrite:
             to_ids = {x for lst in [data.loc[data[f'nearest{j}'] == i + 1, 'fid'].to_list() for j in range(1, self.levels)] for x in lst}
             from_ids = set([data.loc[i, f'nearest{j}'] for j in range(1, self.levels)]) - {-1}
             data.loc[i, 'connections'] =  len(to_ids | from_ids)
-        
-        self.results = data
-    def export_objects(self, out_file='dendrite_points.geojson'):
-        results = self.results
-        results.to_file(out_file, driver='GeoJSON', crs=self.crs)
-        return results
-    def export_dendrite(self, out_file='dendrite.geojson'):
-        results = self.results
+
+        # creating dendrite lines
         dendrite = gpd.GeoDataFrame(columns=['cluster', 'level', 'geometry'], geometry='geometry')
         for i in range(1, self.levels):
-            lines = results.loc[results[f'line{i}'] != '', ['fid', f'nearest{i}', f'cluster{i}', f'line{i}']]
+            lines = data.loc[data[f'line{i}'] != '', ['fid', f'nearest{i}', f'cluster{i}', f'line{i}']]
             lines.rename(columns={f'cluster{i}':'cluster',f'nearest{i}':'nearest'}, inplace=True)
             lines['level'] = i
             lines['geometry'] = gpd.GeoSeries.from_wkt(lines[f'line{i}'])
             dendrite = pd.concat([dendrite, gpd.GeoDataFrame(lines[['fid', 'nearest', 'cluster', 'level', 'geometry']], geometry='geometry')])
+        
         self.dendrite = dendrite
-        dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
-        return dendrite
+        self.results = data
+    def export_objects(self, out_file='dendrite_points.geojson'):
+        self.results.to_file(out_file, driver='GeoJSON', crs=self.crs)
+        return self.results
+    def export_dendrite(self, out_file='dendrite.geojson'):
+        self.dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
+        return self.dendrite
     def plot(self):
         dendrite = self.dendrite
         objects = self.results
