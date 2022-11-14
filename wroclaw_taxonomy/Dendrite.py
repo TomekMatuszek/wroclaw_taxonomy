@@ -36,7 +36,7 @@ class Dendrite:
         data['lon'] = data.centroid.x
 
         self.data = data
-        self.source_data = data.loc[:, data.columns]
+        self.source_data = data.copy()
     def __str__(self):
         pass
     def __clear_matrix(self, data, matrix, column):
@@ -58,7 +58,7 @@ class Dendrite:
             for_matrix = data.loc[:,columns]
         
         distance_matrix = np.array(cdist(for_matrix, for_matrix, metric='euclidean'))
-        self.matrix = np.array(cdist(for_matrix, for_matrix, metric='euclidean'))
+        self.matrix = np.copy(distance_matrix)
         
         # get nearest neighbours
         data['nearest1'] = np.argmin(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1) + 1
@@ -123,6 +123,9 @@ class Dendrite:
             lines['geometry'] = gpd.GeoSeries.from_wkt(lines[f'line{i}'])
             dendrite = pd.concat([dendrite, gpd.GeoDataFrame(lines[['fid', 'nearest', 'cluster', 'level', 'geometry']], geometry='geometry')])
         
+        #dendrite['length'] = dendrite.length
+        #dendrite = dendrite[~((dendrite['length'] > (np.mean(dendrite.length) + 2 * np.std(dendrite.length))) & (dendrite['level'] > 2))]
+
         self.dendrite = dendrite
         self.results = data
     def export_objects(self, out_file='dendrite_points.geojson'):
