@@ -175,7 +175,7 @@ class Dendrite:
         else:
             return fig
 
-    def animate(self, out_file='dendrite.gif', lines=True, style=plot_style):
+    def animate(self, out_file='dendrite.gif', frame_duration=1, lines=True, style=plot_style):
         dendrite = self.dendrite
         n_frames = np.max(dendrite["level"].unique())
         files = []
@@ -187,7 +187,7 @@ class Dendrite:
             files.append(f'frame{i}.png')
             frames.append(imageio.imread(f'frame{i}.png'))
         
-        imageio.mimsave(out_file, frames, duration=1)
+        imageio.mimsave(out_file, frames, duration=frame_duration)
         for file in files:
             os.remove(file)
 

@@ -2,7 +2,11 @@
 
 ## About
 
-This package consists of one class called `Dendrite` which groupes set of points into clusters based on Wroclaw taxonomy method.
+This package consists of one class called `Dendrite` which enables user to create dendrite out of set of points based on Wroclaw taxonomy method.
+It uses euclidean distance to group objects into possibly similar groups.
+In the next steps, each group is merged with the other closest group until the whole dataset is combined into one coherent dendrite.
+
+User can export results to GeoJSON file or visualise them using `plot()` and `animate()`.
 
 ## Installation
 
@@ -47,7 +51,9 @@ dendrite.plot(
 Animation showing every stage of the dendrite creation:
 
 ```python
-dendrite.animate()
+dendrite.animate(out_file='dendrite.gif', frame_duration=1)
 ```
 
 ![](img/dendrite.gif)
+
+More examples can be found in file [examples.ipynb](https://github.com/TomekMatuszek/wroclaw-taxonomy/blob/main/examples.ipynb)
