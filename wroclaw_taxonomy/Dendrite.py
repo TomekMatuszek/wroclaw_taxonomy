@@ -134,17 +134,27 @@ class Dendrite:
     def export_dendrite(self, out_file='dendrite.geojson'):
         self.dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return self.dendrite
-    def plot(self):
+    def plot(self, level=None):
         dendrite = self.dendrite
         objects = self.results
+        if level is not None:
+            dendrite = dendrite[dendrite['level'] <= level]
         fig, ax = plt.subplots(figsize = (10, 10))
         for lvl, lwd in zip(range(1, max(dendrite['level']) + 1), np.arange(0.5, 2 + (1.5 / (max(dendrite['level']) + 1)), (1.5 / (max(dendrite['level']) + 1)))):
             dendrite[dendrite['level'] == lvl].plot(ax=ax, color='#222222',  linewidth=lwd, zorder=5)
 
-        if objects.geom_type[0] == 'Point':
-            objects.plot(ax=ax, color='#ff0000', markersize=(objects['connections'] - 0.75) * 2, zorder=10)
-        elif objects.geom_type[0] == 'MultiPolygon':
-            objects.plot(ax=ax, color='#ff0000', cmap='Reds', column='connections', zorder=1)
+        if objects.geom_type[0] == 'Point' and level is not None:
+            objects.plot(ax=ax, cmap='hsv', markersize=2,
+            zorder=10, column=f'cluster{level}')
+        elif objects.geom_type[0] == 'Point' and level is None:
+            objects.plot(ax=ax, color='#ff0000', zorder=10,
+            markersize=(objects['connections'] - 0.75) * 2)
+        elif objects.geom_type[0] == 'MultiPolygon' and level is not None:
+            objects.plot(ax=ax, cmap='hsv',
+            zorder=1, column=f'cluster{level}')
+        elif objects.geom_type[0] == 'MultiPolygon' and level is None:
+            objects.plot(ax=ax, zorder=1,
+            cmap='Reds', column='connections')
         
         plt.show()
 
