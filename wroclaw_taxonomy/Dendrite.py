@@ -10,12 +10,6 @@ import imageio
 import os
 
 class Dendrite:
-    plot_style = {
-        "markersize": 10,
-        "cmap": 'jet',
-        "line_color": '#222222',
-        "object_color": '#ff0000'
-    }
     def __init__(self, src):
         if isinstance(src, gpd.GeoDataFrame):
             data = src
@@ -43,6 +37,12 @@ class Dendrite:
         data['lat'] = data.centroid.y
         data['lon'] = data.centroid.x
 
+        self.plot_style = {
+            "markersize": 10,
+            "cmap": 'jet',
+            "line_color": '#222222',
+            "object_color": '#ff0000'
+        }
         self.data = data
         self.source_data = data.copy()
     def __str__(self):
@@ -143,8 +143,21 @@ class Dendrite:
     def export_dendrite(self, out_file='dendrite.geojson'):
         self.dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return self.dendrite
-    def plot(self, level=None, lines=True, style=plot_style, show=True):
-        style = self.plot_style | style
+    def set_style(self, style='default'):
+        if style != 'default':
+            self.plot_style = style
+        else:
+            self.plot_style = {
+                "markersize": 10,
+                "cmap": 'jet',
+                "line_color": '#222222',
+                "object_color": '#ff0000'
+            }
+    def plot(self, level=None, lines=True, style=None, show=True):
+        if style is None:
+            style = self.plot_style
+        else:
+            style = self.plot_style | style
         dendrite = self.dendrite
         objects = self.results
         if level is not None:
@@ -175,7 +188,7 @@ class Dendrite:
         else:
             return fig
 
-    def animate(self, out_file='dendrite.gif', frame_duration=1, lines=True, style=plot_style):
+    def animate(self, out_file='dendrite.gif', frame_duration=1, lines=True, style=None):
         dendrite = self.dendrite
         n_frames = np.max(dendrite["level"].unique())
         files = []
