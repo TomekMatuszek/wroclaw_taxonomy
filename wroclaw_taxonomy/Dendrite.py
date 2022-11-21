@@ -8,6 +8,12 @@ from shapely.geometry import LineString
 from scipy.spatial.distance import cdist
 
 class Dendrite:
+    plot_style = {
+        "markersize": 10,
+        "cmap": 'hsv',
+        "line_color": '#222222',
+        "object_color": '#ff0000'
+    }
     def __init__(self, src):
         if isinstance(src, gpd.GeoDataFrame):
             data = src
@@ -15,7 +21,7 @@ class Dendrite:
             data = gpd.read_file(src, driver = 'GeoJSON')
         else:
             raise TypeError('Argument in_file has to be either string or GeoDataFrame')
-        
+
         # change coordinate reference system
         if data.crs.to_authority()[1] != '4326':
             data.to_crs(epsg=4326, inplace=True)
@@ -134,23 +140,25 @@ class Dendrite:
     def export_dendrite(self, out_file='dendrite.geojson'):
         self.dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return self.dendrite
-    def plot(self, level=None):
+    def plot(self, level=None, lines=True, style=plot_style):
+        style = self.plot_style | style
         dendrite = self.dendrite
         objects = self.results
         if level is not None:
             dendrite = dendrite[dendrite['level'] <= level]
         fig, ax = plt.subplots(figsize = (10, 10))
-        for lvl, lwd in zip(range(1, max(dendrite['level']) + 1), np.arange(0.5, 2 + (1.5 / (max(dendrite['level']) + 1)), (1.5 / (max(dendrite['level']) + 1)))):
-            dendrite[dendrite['level'] == lvl].plot(ax=ax, color='#222222',  linewidth=lwd, zorder=5)
+        if lines==True:
+            for lvl, lwd in zip(range(1, max(dendrite['level']) + 1), np.arange(0.5, 2 + (1.5 / (max(dendrite['level']) + 1)), (1.5 / (max(dendrite['level']) + 1)))):
+                dendrite[dendrite['level'] == lvl].plot(ax=ax, color=style["line_color"],  linewidth=lwd, zorder=5)
 
         if objects.geom_type[0] == 'Point' and level is not None:
-            objects.plot(ax=ax, cmap='hsv', markersize=2,
+            objects.plot(ax=ax, cmap=style["cmap"], markersize=style["markersize"],
             zorder=10, column=f'cluster{level}')
         elif objects.geom_type[0] == 'Point' and level is None:
-            objects.plot(ax=ax, color='#ff0000', zorder=10,
+            objects.plot(ax=ax, color=style["object_color"], zorder=10,
             markersize=(objects['connections'] - 0.75) * 2)
         elif objects.geom_type[0] == 'MultiPolygon' and level is not None:
-            objects.plot(ax=ax, cmap='hsv',
+            objects.plot(ax=ax, cmap=style["cmap"],
             zorder=1, column=f'cluster{level}')
         elif objects.geom_type[0] == 'MultiPolygon' and level is None:
             objects.plot(ax=ax, zorder=1,
