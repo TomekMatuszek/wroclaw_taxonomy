@@ -6,11 +6,13 @@ import warnings
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString
 from scipy.spatial.distance import cdist
+import imageio
+import os
 
 class Dendrite:
     plot_style = {
         "markersize": 10,
-        "cmap": 'hsv',
+        "cmap": 'gnuplot',
         "line_color": '#222222',
         "object_color": '#ff0000'
     }
@@ -140,7 +142,7 @@ class Dendrite:
     def export_dendrite(self, out_file='dendrite.geojson'):
         self.dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return self.dendrite
-    def plot(self, level=None, lines=True, style=plot_style):
+    def plot(self, level=None, lines=True, style=plot_style, show=True):
         style = self.plot_style | style
         dendrite = self.dendrite
         objects = self.results
@@ -164,5 +166,27 @@ class Dendrite:
             objects.plot(ax=ax, zorder=1,
             cmap='Reds', column='connections')
         
-        plt.show()
+        if show==True:
+            plt.show()
+        else:
+            return fig
+
+    def animate(self, style=plot_style):
+        dendrite = self.dendrite
+        n_frames = np.max(dendrite["level"].unique())
+        files = []
+        frames = []
+        for i in range(1, n_frames + 1):
+            img = self.plot(level=i, style=style, show=False)
+            plt.close()
+            img.savefig(f'frame{i}.png')
+            files.append(f'frame{i}.png')
+            frames.append(imageio.imread(f'frame{i}.png'))
+        
+        imageio.mimsave('dendrite.gif', frames, duration=1)
+        for file in files:
+            os.remove(file)
+
+        return "GIF saved in dendrite.gif"
+
 
