@@ -10,7 +10,9 @@ You can install this package by using below pip install command in terminal:
 
 `pip install git+https://github.com/TomekMatuszek/wroclaw-taxonomy.git`
 
-## Examples
+## Example
+
+Basic workflow:
 
 ```python
 from wroclaw_taxonomy import Dendrite
@@ -25,3 +27,27 @@ dendrite.plot()
 ```
 
 ![](img/dendrite.png)
+
+Customizing plot:
+
+```python
+dendrite.plot(
+    level=1, lines=True,
+    style = {
+        "markersize": 20,
+        "cmap": 'gist_rainbow',
+        "line_color": '#000000',
+        "object_color": '#0000ff'
+    }
+)
+```
+
+![](img/dendrite_custom.png)
+
+Animation showing every stage of the dendrite creation:
+
+```python
+dendrite.animate()
+```
+
+![](img/dendrite.gif)

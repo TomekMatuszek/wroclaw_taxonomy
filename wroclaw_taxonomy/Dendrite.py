@@ -12,7 +12,7 @@ import os
 class Dendrite:
     plot_style = {
         "markersize": 10,
-        "cmap": 'gnuplot',
+        "cmap": 'jet',
         "line_color": '#222222',
         "object_color": '#ff0000'
     }
@@ -134,6 +134,7 @@ class Dendrite:
         #dendrite['length'] = dendrite.length
         #dendrite = dendrite[~((dendrite['length'] > (np.mean(dendrite.length) + 2 * np.std(dendrite.length))) & (dendrite['level'] > 2))]
 
+        self.n_levels = lvl - 1
         self.dendrite = dendrite
         self.results = data
     def export_objects(self, out_file='dendrite_points.geojson'):
@@ -166,27 +167,30 @@ class Dendrite:
             objects.plot(ax=ax, zorder=1,
             cmap='Reds', column='connections')
         
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        
         if show==True:
             plt.show()
         else:
             return fig
 
-    def animate(self, style=plot_style):
+    def animate(self, out_file='dendrite.gif', lines=True, style=plot_style):
         dendrite = self.dendrite
         n_frames = np.max(dendrite["level"].unique())
         files = []
         frames = []
         for i in range(1, n_frames + 1):
-            img = self.plot(level=i, style=style, show=False)
+            img = self.plot(level=i, lines=lines, style=style, show=False)
             plt.close()
             img.savefig(f'frame{i}.png')
             files.append(f'frame{i}.png')
             frames.append(imageio.imread(f'frame{i}.png'))
         
-        imageio.mimsave('dendrite.gif', frames, duration=1)
+        imageio.mimsave(out_file, frames, duration=1)
         for file in files:
             os.remove(file)
 
-        return "GIF saved in dendrite.gif"
+        return f"GIF saved in {out_file}"
 
 
