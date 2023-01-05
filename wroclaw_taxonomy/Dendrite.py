@@ -1,3 +1,4 @@
+import math
 import pandas as pd
 import geopandas as gpd
 import numpy as np
@@ -23,12 +24,7 @@ class Dendrite:
             data.to_crs(epsg=4326, inplace=True)
 
         # get UTM zone number and convert to this EPSG
-        zone = round((data.centroid.x[0] + 180) / 6)
-        if data.centroid.y[0] >= 0:
-            crs = int("326" + str(zone))
-        else:
-            crs = int("327" + str(zone))
-
+        crs = self.get_UTM_zone(data.total_bounds)
         data.to_crs(epsg=crs, inplace=True)
         self.crs = crs
 
@@ -54,6 +50,16 @@ class Dendrite:
             matrix[i, indexes] = 0
             matrix[indexes, i] = 0
         return matrix
+    def get_UTM_zone(self, bounds):
+        if math.ceil((bounds[2] + 180) / 6) - math.ceil((bounds[0] + 180) / 6) > 1:
+            return 3857
+        else:
+            zone = math.ceil(((bounds[2] + bounds[0]) / 2 + 180) / 6)
+            if bounds[3] >= 0:
+                crs = int("326" + str(zone))
+            else:
+                crs = int("327" + str(zone))
+            return crs
     def calculate(self, columns=['lat', 'lon'], normalize=False):
         data = self.data
         assert isinstance(columns, list), 'Argument columns has to be a list'
