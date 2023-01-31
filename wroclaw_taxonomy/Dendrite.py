@@ -11,7 +11,44 @@ import imageio
 import os
 
 class Dendrite:
-    def __init__(self, src):
+    """
+    A class used to generate dendrite based on Wroclaw taxonomy method from points.
+
+    ----------
+
+    Attributes
+    ----------
+    crs : int
+        coordinate reference system identifier
+    source_data : GeoDataFrame
+        dataset provided by user
+    data : GeoDataFrame
+        dataset provided by user
+    matrix : NDArray
+        distance matrix
+    n_levels : int
+        number of levels of result dendrite
+    dendrite : GeoDataFrame
+        line layer representing created dendrite
+    results : GeoDataFrame
+        source data with new columns such as cluster ID or number of connections
+
+    Methods
+    ----------
+    calculate(columns:list = ['lat', 'lon'], normalize:bool = False)
+        calculates dendrite
+    export_objects(out_file:str = 'dendrite_points.geojson')
+        exports source data with new columns such as cluster ID or number of connections
+    export_dendrite(out_file:str = 'dendrite.geojson')
+        exports line layer with calculated dendrite
+    set_style(style:dict = 'default')
+        sets style of plots and animations created by this class
+    plot(level:int = None, lines:bool = True, style:dict = None, show:bool = True)
+        plots result dendrite and objects
+    animate(out_file:str = 'dendrite.gif', frame_duration:int = 1, lines:bool = True, style:dict = None)
+        created an animation presenting each step of dendrite creation
+    """
+    def __init__(self, src: str | gpd.GeoDataFrame):
         if isinstance(src, gpd.GeoDataFrame):
             data = src
         elif isinstance(src, str):
@@ -24,7 +61,7 @@ class Dendrite:
             data.to_crs(epsg=4326, inplace=True)
 
         # get UTM zone number and convert to this EPSG
-        crs = self.get_UTM_zone(data.total_bounds)
+        crs = self.__get_UTM_zone(data.total_bounds)
         data.to_crs(epsg=crs, inplace=True)
         self.crs = crs
 
@@ -50,7 +87,7 @@ class Dendrite:
             matrix[i, indexes] = 0
             matrix[indexes, i] = 0
         return matrix
-    def get_UTM_zone(self, bounds):
+    def __get_UTM_zone(self, bounds):
         if math.ceil((bounds[2] + 180) / 6) - math.ceil((bounds[0] + 180) / 6) > 1:
             return 3857
         else:
@@ -60,7 +97,7 @@ class Dendrite:
             else:
                 crs = int("327" + str(zone))
             return crs
-    def calculate(self, columns=['lat', 'lon'], normalize=False):
+    def calculate(self, columns:list = ['lat', 'lon'], normalize:bool = False):
         data = self.data
         assert isinstance(columns, list), 'Argument columns has to be a list'
         # create distance matrix
@@ -143,13 +180,13 @@ class Dendrite:
         self.n_levels = lvl - 1
         self.dendrite = dendrite
         self.results = data
-    def export_objects(self, out_file='dendrite_points.geojson'):
+    def export_objects(self, out_file:str = 'dendrite_points.geojson') -> gpd.GeoDataFrame:
         self.results.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return self.results
-    def export_dendrite(self, out_file='dendrite.geojson'):
+    def export_dendrite(self, out_file:str = 'dendrite.geojson') -> gpd.GeoDataFrame:
         self.dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return self.dendrite
-    def set_style(self, style='default'):
+    def set_style(self, style:dict | str = 'default'):
         if style != 'default':
             self.plot_style = style
         else:
@@ -159,7 +196,7 @@ class Dendrite:
                 "line_color": '#222222',
                 "object_color": '#ff0000'
             }
-    def plot(self, level=None, lines=True, style=None, show=True):
+    def plot(self, level:int = None, lines:bool = True, style:dict = None, show:bool = True):
         if style is None:
             style = self.plot_style
         else:
@@ -194,7 +231,7 @@ class Dendrite:
         else:
             return fig
 
-    def animate(self, out_file='dendrite.gif', frame_duration=1, lines=True, style=None):
+    def animate(self, out_file:str = 'dendrite.gif', frame_duration:int = 1, lines:bool = True, style:dict = None):
         dendrite = self.dendrite
         n_frames = np.max(dendrite["level"].unique())
         files = []
