@@ -49,6 +49,12 @@ class Dendrite:
         created an animation presenting each step of dendrite creation
     """
     def __init__(self, src: str | gpd.GeoDataFrame):
+        """
+        Parameters
+        ----------
+        src : str | GeoDataFrame
+            path to GeoJSON file or GeoDataFrame object with loaded data
+        """
         if isinstance(src, gpd.GeoDataFrame):
             data = src
         elif isinstance(src, str):
@@ -98,6 +104,18 @@ class Dendrite:
                 crs = int("327" + str(zone))
             return crs
     def calculate(self, columns:list = ['lat', 'lon'], normalize:bool = False):
+        """
+        Method which calculates dendrite based on Wroclaw taxonomy.
+
+        ----------
+
+        Parameters
+        ----------
+        columns : list
+            list of columns which should be used in computing Euclidean distance between points
+        normalize : bool
+            if True, values of chosen columns are normalized to (0, 1) range
+        """
         data = self.data
         assert isinstance(columns, list), 'Argument columns has to be a list'
         # create distance matrix
@@ -181,12 +199,42 @@ class Dendrite:
         self.dendrite = dendrite
         self.results = data
     def export_objects(self, out_file:str = 'dendrite_points.geojson') -> gpd.GeoDataFrame:
+        """
+        Exports source data with added columns to GeoJSON file.
+
+        ----------
+
+        Parameters
+        ----------
+        out_file : str
+            path to output file
+        """
         self.results.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return self.results
     def export_dendrite(self, out_file:str = 'dendrite.geojson') -> gpd.GeoDataFrame:
+        """
+        Exports computed dendrite to GeoJSON file.
+
+        ----------
+
+        Parameters
+        ----------
+        out_file : str
+            path to output file
+        """
         self.dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return self.dendrite
     def set_style(self, style:dict | str = 'default'):
+        """
+        Sets style for every map that will be generated later.
+
+        ----------
+
+        Parameters
+        ----------
+        style : dict
+            dictionary containing style configuration of maps, e.g. markersize, cmap, line color and object color
+        """
         if style != 'default':
             self.plot_style = style
         else:
@@ -197,6 +245,22 @@ class Dendrite:
                 "object_color": '#ff0000'
             }
     def plot(self, level:int = None, lines:bool = True, style:dict = None, show:bool = True):
+        """
+        Displays map of computed dendrite and source objects.
+
+        ----------
+
+        Parameters
+        ----------
+        level : int
+            only connections from smaller or equal level will be displayed on a map
+        lines : bool
+            if True, dendrite is plotted; if False, only source objects are plotted
+        style : dict
+            style configuration of map, e.g. markersize, cmap, line color and object color
+        show : bool
+            if True, map is displayed immediately; if False, map is returned and can be saved to variable
+        """
         if style is None:
             style = self.plot_style
         else:
@@ -232,6 +296,22 @@ class Dendrite:
             return fig
 
     def animate(self, out_file:str = 'dendrite.gif', frame_duration:int = 1, lines:bool = True, style:dict = None):
+        """
+        Creates GIF animation showing each step of creating dendrite (map of every level of dendrite connections).
+
+        ----------
+
+        Parameters
+        ----------
+        out_file : str
+            path to output .gif file where animation will be saved
+        frame_duration : int
+            time of display of each frame in seconds
+        lines : bool
+            if True, dendrite is included; if False, only source objects are plotted
+        style : dict
+            style configuration of animation, e.g. markersize, cmap, line color and object color
+        """
         dendrite = self.dendrite
         n_frames = np.max(dendrite["level"].unique())
         files = []
