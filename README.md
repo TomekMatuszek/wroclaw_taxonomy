@@ -10,7 +10,11 @@ User can export results to GeoJSON file or visualise them using `plot()` and `an
 
 ## Installation
 
-You can install this package by using below pip install command in terminal:
+You can install this package from PyPI by typing in terminal:
+
+`pip install wroclaw-taxonomy`
+
+Or download it directly from source repo:
 
 `pip install git+https://github.com/TomekMatuszek/wroclaw-taxonomy.git`
 
