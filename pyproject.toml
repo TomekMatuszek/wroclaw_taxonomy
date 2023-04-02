@@ -1,0 +1,25 @@
+[project]
+name="wroclaw_taxonomy"
+version="0.0.2"
+description="Function for creating dendrite using Wroclaw taxonomy"
+readme = "README.md"
+authors = [
+  {name = "Tomasz Matuszek", email = "tom.mateuszek@gmail.com" }
+]
+dependencies = [
+    "numpy",
+    "shapely",
+    "scipy",
+    "pandas",
+    "fiona",
+    "pyproj",
+    "geopandas"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/TomekMatuszek/wroclaw-taxonomy"
+"Bug Reports" = "https://github.com/TomekMatuszek/wroclaw-taxonomy/issues"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
