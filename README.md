@@ -1,20 +1,19 @@
 # wroclaw_taxonomy package
 
-## About
+## About the method
 
-This package consists of one class called `Dendrite` which enables user to create dendrite out of set of points based on Wroclaw taxonomy method.
-It uses euclidean distance to group objects into possibly similar groups.
-In the next steps, each group is merged with the other closest group until the whole dataset is combined into one coherent dendrite.
-
-User can export results to GeoJSON file or visualise them using `plot()` and `animate()`.
+This package enables user to create dendrite out of set of points based on Wroclaw taxonomy method.
+It uses Euclidean distance calculated from provided variables or geographic coordinates to group objects into possibly similar groups.
+In the following steps, each group is merged with the other closest group until the whole dataset is combined into one coherent dendrite.
+In the end, dendrite can be separated into several groups/clusters to classify data points based on provided variables.
 
 ## Installation
 
-You can install this package from PyPI by typing in terminal:
+You can install this package from PyPI by running this command in terminal:
 
 `pip install wroclawtaxonomy`
 
-Or download it directly from source repo:
+Or download development version of the package directly from this repository:
 
 `pip install git+https://github.com/TomekMatuszek/wroclaw_taxonomy.git`
 
