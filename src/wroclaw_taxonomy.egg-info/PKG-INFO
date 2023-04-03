@@ -1,10 +1,10 @@
 Metadata-Version: 2.1
 Name: wroclaw-taxonomy
-Version: 0.0.3
+Version: 0.0.1
 Summary: Function for creating dendrite using Wroclaw taxonomy
 Author-email: Tomasz Matuszek <tom.mateuszek@gmail.com>
-Project-URL: Homepage, https://github.com/TomekMatuszek/wroclaw-taxonomy
-Project-URL: Bug Reports, https://github.com/TomekMatuszek/wroclaw-taxonomy/issues
+Project-URL: Homepage, https://github.com/TomekMatuszek/wroclaw_taxonomy
+Project-URL: Bug Reports, https://github.com/TomekMatuszek/wroclaw_taxonomy/issues
 Description-Content-Type: text/markdown
 
 # wroclaw-taxonomy package
