@@ -53,12 +53,12 @@ class Dendrite:
         Parameters
         ----------
         src : str | GeoDataFrame
-            path to GeoJSON file or GeoDataFrame object with loaded data
+            path to spatial file or GeoDataFrame object with loaded data
         """
         if isinstance(src, gpd.GeoDataFrame):
             data = src
         elif isinstance(src, str):
-            data = gpd.read_file(src, driver = 'GeoJSON')
+            data = gpd.read_file(src)
         else:
             raise TypeError('Argument in_file has to be either string or GeoDataFrame')
 
@@ -85,7 +85,7 @@ class Dendrite:
         self.data = data
         self.source_data = data.copy()
     def __str__(self):
-        pass
+        return f'<Dendrite object:  {self.levels} levels>'
     def __clear_matrix(self, data, matrix, column):
         for i in range(0, data.shape[0]):
             cluster = data.loc[i, column]
@@ -140,7 +140,7 @@ class Dendrite:
         # clearing matrix
         distance_matrix = self.__clear_matrix(data, distance_matrix, 'cluster1')
 
-        # repeating clustering to get one big cluster
+        # repeating clustering until getting one big cluster
         lvl = 2
         while data[f'cluster{lvl-1}'].unique().shape[0] > 1:
             # get nearest neighbour of cluster
