@@ -3,11 +3,13 @@ name: Update PyPI
 on:
   push:
     branches:
-      - main
+      - 'main'
+    paths:
+      - '**.toml'
   pull_request:
     types: [closed]
     branches:
-      - main
+      - 'main'
 
 jobs:
   build-and-deploy:
