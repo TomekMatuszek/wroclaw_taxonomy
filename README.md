@@ -12,7 +12,7 @@ User can export results to GeoJSON file or visualise them using `plot()` and `an
 
 You can install this package from PyPI by typing in terminal:
 
-`pip install wroclaw_taxonomy`
+`pip install wroclawtaxonomy`
 
 Or download it directly from source repo:
 
@@ -23,7 +23,7 @@ Or download it directly from source repo:
 Basic workflow:
 
 ```python
-from wroclaw_taxonomy import Dendrite
+from wroclaw_taxonomy.Dendrite import Dendrite
 
 dendrite = Dendrite(src='data/citiesPL_pop.geojson')
 dendrite.calculate(columns=['lat', 'lon'], normalize=False)
