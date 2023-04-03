@@ -1,4 +1,4 @@
-# wroclaw-taxonomy package
+# wroclaw_taxonomy package
 
 ## About
 
@@ -12,11 +12,11 @@ User can export results to GeoJSON file or visualise them using `plot()` and `an
 
 You can install this package from PyPI by typing in terminal:
 
-`pip install wroclaw-taxonomy`
+`pip install wroclaw_taxonomy`
 
 Or download it directly from source repo:
 
-`pip install git+https://github.com/TomekMatuszek/wroclaw-taxonomy.git`
+`pip install git+https://github.com/TomekMatuszek/wroclaw_taxonomy.git`
 
 ## Example
 
@@ -34,7 +34,7 @@ dendrite.export_dendrite(out_file='dendrite.geojson')
 dendrite.plot()
 ```
 
-![](img/dendrite.png)
+![](https://github.com/TomekMatuszek/wroclaw_taxonomy/blob/35c8045b73ee65029bdb1d9afc5ed75f6a6e136c/img/dendrite.png)
 
 Customizing plot:
 
@@ -50,7 +50,7 @@ dendrite.plot(
 )
 ```
 
-![](img/dendrite_custom.png)
+![](https://github.com/TomekMatuszek/wroclaw_taxonomy/blob/35c8045b73ee65029bdb1d9afc5ed75f6a6e136c/img/dendrite_custom.png)
 
 Animation showing every stage of the dendrite creation:
 
@@ -58,6 +58,6 @@ Animation showing every stage of the dendrite creation:
 dendrite.animate(out_file='dendrite.gif', frame_duration=1)
 ```
 
-![](img/dendrite.gif)
+![](https://github.com/TomekMatuszek/wroclaw_taxonomy/blob/35c8045b73ee65029bdb1d9afc5ed75f6a6e136c/img/dendrite.gif)
 
-More examples can be found in file [examples.ipynb](https://github.com/TomekMatuszek/wroclaw-taxonomy/blob/main/examples.ipynb)
+More examples can be found in file [examples.ipynb](https://github.com/TomekMatuszek/wroclaw_taxonomy/blob/main/examples.ipynb)

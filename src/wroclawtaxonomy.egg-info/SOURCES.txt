@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+src/wroclaw_taxonomy/Dendrite.py
+src/wroclaw_taxonomy/__init__.py
+src/wroclawtaxonomy.egg-info/PKG-INFO
+src/wroclawtaxonomy.egg-info/SOURCES.txt
+src/wroclawtaxonomy.egg-info/dependency_links.txt
+src/wroclawtaxonomy.egg-info/requires.txt
+src/wroclawtaxonomy.egg-info/top_level.txt
