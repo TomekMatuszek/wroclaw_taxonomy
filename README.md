@@ -23,9 +23,9 @@ Or download it directly from source repo:
 Basic workflow:
 
 ```python
-from wroclaw_taxonomy.Dendrite import Dendrite
+import wroclaw_taxonomy as wt
 
-dendrite = Dendrite(src='data/citiesPL_pop.geojson')
+dendrite = wt.Dendrite(src='data/citiesPL_pop.geojson')
 dendrite.calculate(columns=['lat', 'lon'], normalize=False)
 
 dendrite.export_objects(out_file='dendrite_points.geojson')

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: wroclawtaxonomy
-Version: 0.0.1
+Version: 0.0.3
 Summary: Function for creating dendrite using Wroclaw taxonomy
 Author-email: Tomasz Matuszek <tom.mateuszek@gmail.com>
 Project-URL: Homepage, https://github.com/TomekMatuszek/wroclaw_taxonomy
@@ -32,9 +32,9 @@ Or download it directly from source repo:
 Basic workflow:
 
 ```python
-from wroclaw_taxonomy import Dendrite
+import wroclaw_taxonomy as wt
 
-dendrite = Dendrite(src='data/citiesPL_pop.geojson')
+dendrite = wt.Dendrite(src='data/citiesPL_pop.geojson')
 dendrite.calculate(columns=['lat', 'lon'], normalize=False)
 
 dendrite.export_objects(out_file='dendrite_points.geojson')
