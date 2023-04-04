@@ -8,7 +8,7 @@ import warnings
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString
 from scipy.spatial.distance import cdist
-from wroclaw_taxonomy.Plotter import Plotter
+import wroclaw_taxonomy
 
 class Dendrite:
     """
@@ -232,10 +232,10 @@ class Dendrite:
         self.dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return self.dendrite
     
-    def create_plotter(self) -> Plotter:
+    def create_plotter(self) -> wroclaw_taxonomy.Plotter:
         """
         Creates Plotter instance from calculated dendrite.
         """
-        plotter = Plotter(self)
+        plotter = wroclaw_taxonomy.Plotter(self)
         return plotter
  

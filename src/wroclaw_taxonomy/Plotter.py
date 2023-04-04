@@ -3,7 +3,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import imageio
-from wroclaw_taxonomy.Dendrite import Dendrite
+import wroclaw_taxonomy
 
 class Plotter:
     """
@@ -28,7 +28,7 @@ class Plotter:
         created an animation presenting each step of dendrite creation
     """
 
-    def __init__(self, dendrite:Dendrite, style:dict = None):
+    def __init__(self, dendrite:wroclaw_taxonomy.Dendrite, style:dict = None):
         """
         Parameters
         ----------
