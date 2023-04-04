@@ -6,26 +6,16 @@ from wroclaw_taxonomy.Dendrite import Dendrite
 
 class Plotter:
     """
-    A class used to generate dendrite based on Wroclaw taxonomy method from points.
+    A class used to plot dendrite calculated by Wroclaw taxonomy method.
 
     ----------
 
     Attributes
     ----------
-    crs : int
-        coordinate reference system identifier
-    source_data : GeoDataFrame
-        dataset provided by user
-    data : GeoDataFrame
-        dataset provided by user
-    matrix : NDArray
-        distance matrix
-    n_levels : int
-        number of levels of result dendrite
-    dendrite : GeoDataFrame
-        line layer representing created dendrite
-    results : GeoDataFrame
-        source data with new columns such as cluster ID or number of connections
+    obj : Dendrite
+        dendrite object after using .calculate() method
+    plot_style : dict
+        dictionary of Matplotlib styling options for maps 
 
     Methods
     ----------
@@ -36,23 +26,55 @@ class Plotter:
     animate(out_file:str = 'dendrite.gif', frame_duration:int = 1, lines:bool = True, style:dict = None)
         created an animation presenting each step of dendrite creation
     """
-    def __init__(self, dendrite: Dendrite):
+
+    def __init__(self, dendrite: Dendrite, style: dict = None):
         """
         Parameters
         ----------
         dendrite : Dendrite
-            
+            dendrite object after using .calculate() method
+        style : dict:
+            dictionary of Matplotlib styling options for maps 
         """
+        if dendrite._processed is False:
+            raise AttributeError('Dendrite was not processed! Use .calculate() method first')
+        else:
+            self.obj = dendrite
+
         self.plot_style = {
             "markersize": 10,
             "cmap": 'jet',
             "line_color": '#222222',
             "object_color": '#ff0000'
         }
-        self.data = dendrite
-        self.source_data = dendrite.copy()
+        if style is not None:
+            self.set_style(style)
+    
     def __str__(self):
         return f'<Plotter object:   default style>'
+    
+    def set_style(self, style:dict | str = 'default'):
+        """
+        Sets style for every map that will be generated later.
+
+        ----------
+
+        Parameters
+        ----------
+        style : dict
+            dictionary containing style configuration of maps, e.g. markersize, cmap, line color and object color
+        """
+        if style != 'default':
+            self.plot_style = style #| self.plot_style
+        else:
+            self.plot_style = {
+                "markersize": 10,
+                "cmap": 'jet',
+                "line_color": '#222222',
+                "object_color": '#ff0000'
+            }
+        return self
+    
     def plot(self, level:int = None, lines:bool = True, style:dict = None, show:bool = True):
         """
         Displays map of computed dendrite and source objects.
@@ -74,8 +96,8 @@ class Plotter:
             style = self.plot_style
         else:
             style = self.plot_style | style
-        dendrite = self.dendrite
-        objects = self.results
+        dendrite = self.obj.dendrite
+        objects = self.obj.results
         if level is not None:
             dendrite = dendrite[dendrite['level'] <= level]
         fig, ax = plt.subplots(figsize = (10, 10))
@@ -84,17 +106,34 @@ class Plotter:
                 dendrite[dendrite['level'] == lvl].plot(ax=ax, color=style["line_color"],  linewidth=lwd, zorder=5)
 
         if objects.geom_type[0] == 'Point' and level is not None:
-            objects.plot(ax=ax, cmap=style["cmap"], markersize=style["markersize"],
-            zorder=10, column=f'cluster{level}')
+            objects.plot(
+                ax=ax,
+                cmap=style["cmap"],
+                markersize=style["markersize"],
+                zorder=10,
+                column=f'cluster{level}'
+            )
         elif objects.geom_type[0] == 'Point' and level is None:
-            objects.plot(ax=ax, color=style["object_color"], zorder=10,
-            markersize=(objects['connections'] - 0.75) * 2)
+            objects.plot(
+                ax=ax,
+                color=style["object_color"],
+                zorder=10,
+                markersize=(objects['connections'] - 0.75) * 2
+            )
         elif objects.geom_type[0] == 'MultiPolygon' and level is not None:
-            objects.plot(ax=ax, cmap=style["cmap"],
-            zorder=1, column=f'cluster{level}')
+            objects.plot(
+                ax=ax,
+                cmap=style["cmap"],
+                zorder=1,
+                column=f'cluster{level}'
+            )
         elif objects.geom_type[0] == 'MultiPolygon' and level is None:
-            objects.plot(ax=ax, zorder=1,
-            cmap='Reds', column='connections')
+            objects.plot(
+                ax=ax,
+                zorder=1,
+                cmap='Reds',
+                column='connections'
+            )
         
         ax.set_xticklabels([])
         ax.set_yticklabels([])
@@ -121,7 +160,7 @@ class Plotter:
         style : dict
             style configuration of animation, e.g. markersize, cmap, line color and object color
         """
-        dendrite = self.dendrite
+        dendrite = self.obj.dendrite
         n_frames = np.max(dendrite["level"].unique())
         files = []
         frames = []
@@ -137,23 +176,3 @@ class Plotter:
             os.remove(file)
 
         return f"GIF saved in {out_file}"
-    def set_style(self, style:dict | str = 'default'):
-        """
-        Sets style for every map that will be generated later.
-
-        ----------
-
-        Parameters
-        ----------
-        style : dict
-            dictionary containing style configuration of maps, e.g. markersize, cmap, line color and object color
-        """
-        if style != 'default':
-            self.plot_style = style
-        else:
-            self.plot_style = {
-                "markersize": 10,
-                "cmap": 'jet',
-                "line_color": '#222222',
-                "object_color": '#ff0000'
-            }

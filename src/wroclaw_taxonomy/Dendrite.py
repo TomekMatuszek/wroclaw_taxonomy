@@ -7,8 +7,7 @@ import warnings
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString
 from scipy.spatial.distance import cdist
-import imageio
-import os
+from wroclaw_taxonomy.Plotter import Plotter
 
 class Dendrite:
     """
@@ -41,13 +40,8 @@ class Dendrite:
         exports source data with new columns such as cluster ID or number of connections
     export_dendrite(out_file:str = 'dendrite.geojson')
         exports line layer with calculated dendrite
-    set_style(style:dict = 'default')
-        sets style of plots and animations created by this class
-    plot(level:int = None, lines:bool = True, style:dict = None, show:bool = True)
-        plots result dendrite and objects
-    animate(out_file:str = 'dendrite.gif', frame_duration:int = 1, lines:bool = True, style:dict = None)
-        created an animation presenting each step of dendrite creation
     """
+
     def __init__(self, src: str | gpd.GeoDataFrame):
         """
         Parameters
@@ -76,6 +70,7 @@ class Dendrite:
         data['lat'] = data.centroid.y
         data['lon'] = data.centroid.x
 
+        self._processed = False
         self.plot_style = {
             "markersize": 10,
             "cmap": 'jet',
@@ -84,8 +79,13 @@ class Dendrite:
         }
         self.data = data
         self.source_data = data.copy()
+    
     def __str__(self):
-        return f'<Dendrite object:  {self.levels} levels>'
+        if self._processed:
+            return f'<Dendrite object:  {self.levels} levels>'
+        else:
+            return '<Dendrite object:  unprocessed>'
+    
     def __clear_matrix(self, data, matrix, column):
         for i in range(0, data.shape[0]):
             cluster = data.loc[i, column]
@@ -93,6 +93,7 @@ class Dendrite:
             matrix[i, indexes] = 0
             matrix[indexes, i] = 0
         return matrix
+    
     def __get_UTM_zone(self, bounds):
         if math.ceil((bounds[2] + 180) / 6) - math.ceil((bounds[0] + 180) / 6) > 1:
             return 3857
@@ -103,6 +104,7 @@ class Dendrite:
             else:
                 crs = int("327" + str(zone))
             return crs
+    
     def calculate(self, columns:list = ['lat', 'lon'], normalize:bool = False):
         """
         Method which calculates dendrite based on Wroclaw taxonomy.
@@ -198,6 +200,9 @@ class Dendrite:
         self.n_levels = lvl - 1
         self.dendrite = dendrite
         self.results = data
+        self._processed = True
+        return self
+    
     def export_objects(self, out_file:str = 'dendrite_points.geojson') -> gpd.GeoDataFrame:
         """
         Exports source data with added columns to GeoJSON file.
@@ -211,6 +216,7 @@ class Dendrite:
         """
         self.results.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return self.results
+    
     def export_dendrite(self, out_file:str = 'dendrite.geojson') -> gpd.GeoDataFrame:
         """
         Exports computed dendrite to GeoJSON file.
@@ -224,109 +230,11 @@ class Dendrite:
         """
         self.dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
         return self.dendrite
-    def set_style(self, style:dict | str = 'default'):
+    
+    def create_plotter(self) -> Plotter:
         """
-        Sets style for every map that will be generated later.
-
-        ----------
-
-        Parameters
-        ----------
-        style : dict
-            dictionary containing style configuration of maps, e.g. markersize, cmap, line color and object color
+        Creates Plotter instance from calculated dendrite.
         """
-        if style != 'default':
-            self.plot_style = style
-        else:
-            self.plot_style = {
-                "markersize": 10,
-                "cmap": 'jet',
-                "line_color": '#222222',
-                "object_color": '#ff0000'
-            }
-    def plot(self, level:int = None, lines:bool = True, style:dict = None, show:bool = True):
-        """
-        Displays map of computed dendrite and source objects.
-
-        ----------
-
-        Parameters
-        ----------
-        level : int
-            only connections from smaller or equal level will be displayed on a map
-        lines : bool
-            if True, dendrite is plotted; if False, only source objects are plotted
-        style : dict
-            style configuration of map, e.g. markersize, cmap, line color and object color
-        show : bool
-            if True, map is displayed immediately; if False, map is returned and can be saved to variable
-        """
-        if style is None:
-            style = self.plot_style
-        else:
-            style = self.plot_style | style
-        dendrite = self.dendrite
-        objects = self.results
-        if level is not None:
-            dendrite = dendrite[dendrite['level'] <= level]
-        fig, ax = plt.subplots(figsize = (10, 10))
-        if lines==True:
-            for lvl, lwd in zip(range(1, max(dendrite['level']) + 1), np.arange(0.5, 2 + (1.5 / (max(dendrite['level']) + 1)), (1.5 / (max(dendrite['level']) + 1)))):
-                dendrite[dendrite['level'] == lvl].plot(ax=ax, color=style["line_color"],  linewidth=lwd, zorder=5)
-
-        if objects.geom_type[0] == 'Point' and level is not None:
-            objects.plot(ax=ax, cmap=style["cmap"], markersize=style["markersize"],
-            zorder=10, column=f'cluster{level}')
-        elif objects.geom_type[0] == 'Point' and level is None:
-            objects.plot(ax=ax, color=style["object_color"], zorder=10,
-            markersize=(objects['connections'] - 0.75) * 2)
-        elif objects.geom_type[0] == 'MultiPolygon' and level is not None:
-            objects.plot(ax=ax, cmap=style["cmap"],
-            zorder=1, column=f'cluster{level}')
-        elif objects.geom_type[0] == 'MultiPolygon' and level is None:
-            objects.plot(ax=ax, zorder=1,
-            cmap='Reds', column='connections')
-        
-        ax.set_xticklabels([])
-        ax.set_yticklabels([])
-        
-        if show==True:
-            plt.show()
-        else:
-            return fig
-
-    def animate(self, out_file:str = 'dendrite.gif', frame_duration:int = 1, lines:bool = True, style:dict = None):
-        """
-        Creates GIF animation showing each step of creating dendrite (map of every level of dendrite connections).
-
-        ----------
-
-        Parameters
-        ----------
-        out_file : str
-            path to output .gif file where animation will be saved
-        frame_duration : int
-            time of display of each frame in seconds
-        lines : bool
-            if True, dendrite is included; if False, only source objects are plotted
-        style : dict
-            style configuration of animation, e.g. markersize, cmap, line color and object color
-        """
-        dendrite = self.dendrite
-        n_frames = np.max(dendrite["level"].unique())
-        files = []
-        frames = []
-        for i in range(1, n_frames + 1):
-            img = self.plot(level=i, lines=lines, style=style, show=False)
-            plt.close()
-            img.savefig(f'frame{i}.png')
-            files.append(f'frame{i}.png')
-            frames.append(imageio.imread(f'frame{i}.png'))
-        
-        imageio.mimsave(out_file, frames, duration=frame_duration)
-        for file in files:
-            os.remove(file)
-
-        return f"GIF saved in {out_file}"
-
-
+        plotter = Plotter(self)
+        return plotter
+ 
