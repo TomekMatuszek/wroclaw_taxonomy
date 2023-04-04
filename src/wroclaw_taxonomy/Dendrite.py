@@ -1,3 +1,4 @@
+from __future__ import annotations
 import math
 import pandas as pd
 import geopandas as gpd
@@ -105,7 +106,7 @@ class Dendrite:
                 crs = int("327" + str(zone))
             return crs
     
-    def calculate(self, columns:list = ['lat', 'lon'], normalize:bool = False):
+    def calculate(self, columns:list = ['lat', 'lon'], normalize:bool = False) -> Dendrite:
         """
         Method which calculates dendrite based on Wroclaw taxonomy.
 

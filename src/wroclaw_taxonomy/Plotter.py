@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -27,7 +28,7 @@ class Plotter:
         created an animation presenting each step of dendrite creation
     """
 
-    def __init__(self, dendrite: Dendrite, style: dict = None):
+    def __init__(self, dendrite:Dendrite, style:dict = None):
         """
         Parameters
         ----------
@@ -53,7 +54,7 @@ class Plotter:
     def __str__(self):
         return f'<Plotter object:   default style>'
     
-    def set_style(self, style:dict | str = 'default'):
+    def set_style(self, style: dict | str = 'default') -> Plotter:
         """
         Sets style for every map that will be generated later.
 
@@ -143,7 +144,7 @@ class Plotter:
         else:
             return fig
 
-    def animate(self, out_file:str = 'dendrite.gif', frame_duration:int = 1, lines:bool = True, style:dict = None):
+    def animate(self, out_file:str = 'dendrite.gif', frame_duration:int = 1, lines:bool = True, style:dict = None) -> str:
         """
         Creates GIF animation showing each step of creating dendrite (map of every level of dendrite connections).
 
