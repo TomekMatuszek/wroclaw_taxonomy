@@ -30,7 +30,8 @@ dendrite.calculate(columns=['lat', 'lon'], normalize=False)
 dendrite.export_objects(out_file='dendrite_points.geojson')
 dendrite.export_dendrite(out_file='dendrite.geojson')
 
-dendrite.plot()
+plotter = wt.Plotter(dendrite)
+plotter.plot()
 ```
 
 ![](https://github.com/TomekMatuszek/wroclaw_taxonomy/blob/35c8045b73ee65029bdb1d9afc5ed75f6a6e136c/img/dendrite.png)
@@ -38,7 +39,7 @@ dendrite.plot()
 Customizing plot:
 
 ```python
-dendrite.plot(
+plotter.plot(
     level=1, lines=True,
     style = {
         "markersize": 20,
@@ -54,7 +55,7 @@ dendrite.plot(
 Animation showing every stage of the dendrite creation:
 
 ```python
-dendrite.animate(out_file='dendrite.gif', frame_duration=1)
+plotter.animate(out_file='dendrite.gif', frame_duration=1)
 ```
 
 ![](https://github.com/TomekMatuszek/wroclaw_taxonomy/blob/35c8045b73ee65029bdb1d9afc5ed75f6a6e136c/img/dendrite.gif)
