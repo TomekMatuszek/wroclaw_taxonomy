@@ -86,15 +86,7 @@ class Dendrite:
             return f'<Dendrite object:  {self.levels} levels>'
         else:
             return '<Dendrite object:  unprocessed>'
-    
-    def __clear_matrix(self, data, matrix, column):
-        for i in range(0, data.shape[0]):
-            cluster = data.loc[i, column]
-            indexes = data.index[data[column] == cluster].tolist()
-            matrix[i, indexes] = 0
-            matrix[indexes, i] = 0
-        return matrix
-    
+      
     def __get_UTM_zone(self, bounds):
         if math.ceil((bounds[2] + 180) / 6) - math.ceil((bounds[0] + 180) / 6) > 1:
             return 3857
@@ -105,6 +97,89 @@ class Dendrite:
             else:
                 crs = int("327" + str(zone))
             return crs
+        
+    def __create_matrix(self, data, columns, normalize):
+        for_matrix = data.loc[:,columns]
+        if normalize == True:
+            if any(item in ('lat', 'lon') for item in columns):
+                warnings.warn('You are normalizing coordinate values. It may slightly change results.')
+            for_matrix = for_matrix.apply(lambda x: (x-x.mean())/ x.std(), axis=0)
+        
+        distance_matrix = np.array(cdist(for_matrix, for_matrix, metric='euclidean'))
+        self.matrix = np.copy(distance_matrix)
+        return distance_matrix
+    
+    def __mask_matrix(self, distance_matrix):
+        return ma.masked_array(distance_matrix, mask= distance_matrix==0)
+    
+    def __clear_matrix(self, data, matrix, column):
+        for i in range(0, data.shape[0]):
+            cluster = data.loc[i, column]
+            indexes = data.index[data[column] == cluster].tolist()
+            matrix[i, indexes] = 0
+            matrix[indexes, i] = 0
+        return matrix
+    
+    def __cluster_points(self, data, lvl):
+        for i in range(0, data.shape[0]):
+            if lvl == 1:
+                data.loc[data['cluster1'] == i + 1, 'cluster1'] = data.loc[i, 'cluster1']
+            else:
+                data.loc[data[f'cluster{lvl}'] == data.loc[i, f'cluster{lvl-1}'], f'cluster{lvl}'] = data.loc[i, f'cluster{lvl}']
+        return data
+    
+    def __merge_clusters(self, data, distance_matrix):
+        lvl = 2
+        while data[f'cluster{lvl-1}'].unique().shape[0] > 1:
+            # get nearest neighbour of cluster
+            data[f'nearest{lvl}'] = np.argmin(self.__mask_matrix(distance_matrix), axis=1) + 1
+            data[f'nearest{lvl}_dist'] = np.min(self.__mask_matrix(distance_matrix), axis=1)
+
+            for i in data[f'cluster{lvl-1}'].unique():
+                cluster = data.loc[data[f'cluster{lvl-1}'] == i, :]
+                nearest = cluster.loc[cluster[f'nearest{lvl}_dist'] == np.min(cluster[f'nearest{lvl}_dist']), 'fid']
+                data.loc[(data['fid'] != nearest.values[0]) & (data[f'cluster{lvl-1}'] == i), f'nearest{lvl}'] = -1
+
+            # get id of nearest cluster
+            for i in range(0, data.shape[0]):
+                if data.loc[i, f'nearest{lvl}'] == -1:
+                    continue
+                else:
+                    nearest_cluster = data.loc[data['fid'] == data.loc[i, f'nearest{lvl}'], f'cluster{lvl-1}']
+                    data.loc[data[f'cluster{lvl-1}'] == data.loc[i, f'cluster{lvl-1}'], f'cluster{lvl}'] = nearest_cluster.values[0]
+
+            # grouping clusters into bigger ones
+            data = self.__cluster_points(data, lvl)
+            # clearing distance matrix
+            distance_matrix = self.__clear_matrix(data, distance_matrix, f'cluster{lvl}')
+            lvl += 1
+        return (data, lvl)
+    
+    def __create_connections(self, data):
+        for i in range(1, self.levels):
+            for j in range(0, data.shape[0]):
+                if data.loc[j, f'nearest{i}'] != -1:
+                    data.loc[j, f'line{i}'] = LineString([data.loc[j, 'geometry'].centroid, data.loc[data['fid'] == data.loc[j, f'nearest{i}'], 'geometry'].values[0].centroid]).wkt
+                else:
+                    data.loc[j, f'line{i}'] = ''
+        return data
+    
+    def __count_connections(self, data):
+        for i in range(0, data.shape[0]):
+            to_ids = {x for lst in [data.loc[data[f'nearest{j}'] == i + 1, 'fid'].to_list() for j in range(1, self.levels)] for x in lst}
+            from_ids = set([data.loc[i, f'nearest{j}'] for j in range(1, self.levels)]) - {-1}
+            data.loc[i, 'connections'] =  len(to_ids | from_ids)
+        return data
+    
+    def __create_dendrite(self, data):
+        dendrite = gpd.GeoDataFrame(columns=['cluster', 'level', 'geometry'], geometry='geometry')
+        for i in range(1, self.levels):
+            lines = data.loc[data[f'line{i}'] != '', ['fid', f'nearest{i}', f'cluster{i}', f'line{i}']]
+            lines.rename(columns={f'cluster{i}':'cluster',f'nearest{i}':'nearest'}, inplace=True)
+            lines['level'] = i
+            lines['geometry'] = gpd.GeoSeries.from_wkt(lines[f'line{i}'])
+            dendrite = pd.concat([dendrite, gpd.GeoDataFrame(lines[['fid', 'nearest', 'cluster', 'level', 'geometry']], geometry='geometry')])
+        return dendrite
     
     def calculate(self, columns:list = ['lat', 'lon'], normalize:bool = False) -> Dendrite:
         """
@@ -121,83 +196,33 @@ class Dendrite:
         """
         data = self.data
         assert isinstance(columns, list), 'Argument columns has to be a list'
+        
         # create distance matrix
-        if normalize == True:
-            if any(item in ('lat', 'lon') for item in columns):
-                warnings.warn('You are normalizing coordinate values. It may slightly change results.')
-            for_matrix = data.loc[:,columns].apply(lambda x: (x-x.mean())/ x.std(), axis=0)
-        else:
-            for_matrix = data.loc[:,columns]
-        
-        distance_matrix = np.array(cdist(for_matrix, for_matrix, metric='euclidean'))
-        self.matrix = np.copy(distance_matrix)
-        
+        distance_matrix = self.__create_matrix(data, columns, normalize)
         # get nearest neighbours
-        data['nearest1'] = np.argmin(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1) + 1
-        data['cluster1'] = np.argmin(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1) + 1
+        nn = np.argmin(self.__mask_matrix(distance_matrix), axis=1) + 1
+        data['nearest1'] = nn
+        data['cluster1'] = nn
 
         # grouping into clusters
-        for i in range(0, data.shape[0]):
-            data.loc[data['cluster1'] == i + 1, 'cluster1'] = data.loc[i, 'cluster1']
-
+        data = self.__cluster_points(data, 1)
         # clearing matrix
         distance_matrix = self.__clear_matrix(data, distance_matrix, 'cluster1')
 
         # repeating clustering until getting one big cluster
-        lvl = 2
-        while data[f'cluster{lvl-1}'].unique().shape[0] > 1:
-            # get nearest neighbour of cluster
-            data[f'nearest{lvl}'] = np.argmin(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1) + 1
-            data[f'nearest{lvl}_dist'] = np.min(ma.masked_array(distance_matrix, mask= distance_matrix==0), axis=1)
-
-            for i in data[f'cluster{lvl-1}'].unique():
-                cluster = data.loc[data[f'cluster{lvl-1}'] == i, :]
-                nearest = cluster.loc[cluster[f'nearest{lvl}_dist'] == np.min(cluster[f'nearest{lvl}_dist']), 'fid']
-                data.loc[(data['fid'] != nearest.values[0]) & (data[f'cluster{lvl-1}'] == i), f'nearest{lvl}'] = -1
-
-            # get id of nearest cluster
-            for i in range(0, data.shape[0]):
-                if data.loc[i, f'nearest{lvl}'] == -1:
-                    continue
-                else:
-                    nearest_cluster = data.loc[data['fid'] == data.loc[i, f'nearest{lvl}'], f'cluster{lvl-1}']
-                    data.loc[data[f'cluster{lvl-1}'] == data.loc[i, f'cluster{lvl-1}'], f'cluster{lvl}'] = nearest_cluster.values[0]
-
-            # grouping clusters into bigger ones
-            for i in range(0, data.shape[0]):
-                data.loc[data[f'cluster{lvl}'] == data.loc[i, f'cluster{lvl-1}'], f'cluster{lvl}'] = data.loc[i, f'cluster{lvl}']
-
-            # clearing distance matrix
-            distance_matrix = self.__clear_matrix(data, distance_matrix, f'cluster{lvl}')
-            lvl += 1
-
+        data, lvl = self.__merge_clusters(data, distance_matrix)
         self.levels = lvl
         # linestrings for every connection level
-        for i in range(1, lvl):
-            for j in range(0, data.shape[0]):
-                if data.loc[j, f'nearest{i}'] != -1:
-                    data.loc[j, f'line{i}'] = LineString([data.loc[j, 'geometry'].centroid, data.loc[data['fid'] == data.loc[j, f'nearest{i}'], 'geometry'].values[0].centroid]).wkt
-                else:
-                    data.loc[j, f'line{i}'] = ''
-        
+        data = self.__create_connections(data)    
         # counting connections for every point
-        for i in range(0, data.shape[0]):
-            to_ids = {x for lst in [data.loc[data[f'nearest{j}'] == i + 1, 'fid'].to_list() for j in range(1, self.levels)] for x in lst}
-            from_ids = set([data.loc[i, f'nearest{j}'] for j in range(1, self.levels)]) - {-1}
-            data.loc[i, 'connections'] =  len(to_ids | from_ids)
-
+        data = self.__count_connections(data)
         # creating dendrite lines
-        dendrite = gpd.GeoDataFrame(columns=['cluster', 'level', 'geometry'], geometry='geometry')
-        for i in range(1, self.levels):
-            lines = data.loc[data[f'line{i}'] != '', ['fid', f'nearest{i}', f'cluster{i}', f'line{i}']]
-            lines.rename(columns={f'cluster{i}':'cluster',f'nearest{i}':'nearest'}, inplace=True)
-            lines['level'] = i
-            lines['geometry'] = gpd.GeoSeries.from_wkt(lines[f'line{i}'])
-            dendrite = pd.concat([dendrite, gpd.GeoDataFrame(lines[['fid', 'nearest', 'cluster', 'level', 'geometry']], geometry='geometry')])
+        dendrite = self.__create_dendrite(data)
         
         #dendrite['length'] = dendrite.length
         #dendrite = dendrite[~((dendrite['length'] > (np.mean(dendrite.length) + 2 * np.std(dendrite.length))) & (dendrite['level'] > 2))]
 
+        print("New version works!")
         self.n_levels = lvl - 1
         self.dendrite = dendrite
         self.results = data
@@ -215,8 +240,13 @@ class Dendrite:
         out_file : str
             path to output file
         """
-        self.results.to_file(out_file, driver='GeoJSON', crs=self.crs)
-        return self.results
+        if self._processed is True:
+            self.results.to_file(out_file, driver='GeoJSON', crs=self.crs)
+            return self.results
+        else:
+            warnings.warn('Dendrite has not been calculated yet! Source data returned.')
+            self.data.to_file(out_file, driver='GeoJSON', crs=self.crs)
+            return self.data
     
     def export_dendrite(self, out_file:str = 'dendrite.geojson') -> gpd.GeoDataFrame:
         """
@@ -229,8 +259,12 @@ class Dendrite:
         out_file : str
             path to output file
         """
-        self.dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
-        return self.dendrite
+        if self._processed is True:
+            self.dendrite.to_file(out_file, driver='GeoJSON', crs=self.crs)
+            return self.dendrite
+        else:
+            warnings.warn('Dendrite has not been calculated yet!')
+            return None
     
     def create_plotter(self) -> wroclaw_taxonomy.Plotter:
         """
