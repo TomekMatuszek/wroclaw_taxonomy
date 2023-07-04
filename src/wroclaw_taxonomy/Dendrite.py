@@ -80,6 +80,7 @@ class Dendrite:
         }
         self.data = data
         self.source_data = data.copy()
+        self.stats = wroclaw_taxonomy.Stats()
     
     def __str__(self):
         if self._processed:
@@ -87,7 +88,7 @@ class Dendrite:
         else:
             return '<Dendrite object:  unprocessed>'
       
-    def __get_UTM_zone(self, bounds):
+    def __get_UTM_zone(self, bounds:np.ndarray) -> int:
         if math.ceil((bounds[2] + 180) / 6) - math.ceil((bounds[0] + 180) / 6) > 1:
             return 3857
         else:
@@ -98,7 +99,7 @@ class Dendrite:
                 crs = int("327" + str(zone))
             return crs
         
-    def __create_matrix(self, data, columns, normalize):
+    def __create_matrix(self, data:gpd.GeoDataFrame, columns:str | list[str], normalize:bool):
         for_matrix = data.loc[:,columns]
         if normalize == True:
             if any(item in ('lat', 'lon') for item in columns):
@@ -109,10 +110,10 @@ class Dendrite:
         self.matrix = np.copy(distance_matrix)
         return distance_matrix
     
-    def __mask_matrix(self, distance_matrix):
+    def __mask_matrix(self, distance_matrix:np.ndarray):
         return ma.masked_array(distance_matrix, mask= distance_matrix==0)
     
-    def __clear_matrix(self, data, matrix, column):
+    def __clear_matrix(self, data:gpd.GeoDataFrame, matrix:np.ndarray, column:str):
         for i in range(0, data.shape[0]):
             cluster = data.loc[i, column]
             indexes = data.index[data[column] == cluster].tolist()
@@ -120,7 +121,7 @@ class Dendrite:
             matrix[indexes, i] = 0
         return matrix
     
-    def __cluster_points(self, data, lvl):
+    def __cluster_points(self, data:gpd.GeoDataFrame, lvl:int):
         for i in range(0, data.shape[0]):
             if lvl == 1:
                 data.loc[data['cluster1'] == i + 1, 'cluster1'] = data.loc[i, 'cluster1']
@@ -128,7 +129,7 @@ class Dendrite:
                 data.loc[data[f'cluster{lvl}'] == data.loc[i, f'cluster{lvl-1}'], f'cluster{lvl}'] = data.loc[i, f'cluster{lvl}']
         return data
     
-    def __merge_clusters(self, data, distance_matrix):
+    def __merge_clusters(self, data:gpd.GeoDataFrame, distance_matrix:np.ndarray):
         lvl = 2
         while data[f'cluster{lvl-1}'].unique().shape[0] > 1:
             # get nearest neighbour of cluster
@@ -155,7 +156,7 @@ class Dendrite:
             lvl += 1
         return (data, lvl)
     
-    def __create_connections(self, data):
+    def __create_connections(self, data:gpd.GeoDataFrame):
         for i in range(1, self.levels):
             for j in range(0, data.shape[0]):
                 if data.loc[j, f'nearest{i}'] != -1:
@@ -164,14 +165,14 @@ class Dendrite:
                     data.loc[j, f'line{i}'] = ''
         return data
     
-    def __count_connections(self, data):
+    def __count_connections(self, data:gpd.GeoDataFrame):
         for i in range(0, data.shape[0]):
             to_ids = {x for lst in [data.loc[data[f'nearest{j}'] == i + 1, 'fid'].to_list() for j in range(1, self.levels)] for x in lst}
             from_ids = set([data.loc[i, f'nearest{j}'] for j in range(1, self.levels)]) - {-1}
             data.loc[i, 'connections'] =  len(to_ids | from_ids)
         return data
     
-    def __create_dendrite(self, data):
+    def __create_dendrite(self, data:gpd.GeoDataFrame):
         dendrite = gpd.GeoDataFrame(columns=['cluster', 'level', 'geometry'], geometry='geometry')
         for i in range(1, self.levels):
             lines = data.loc[data[f'line{i}'] != '', ['fid', f'nearest{i}', f'cluster{i}', f'line{i}']]
@@ -222,7 +223,8 @@ class Dendrite:
         #dendrite['length'] = dendrite.length
         #dendrite = dendrite[~((dendrite['length'] > (np.mean(dendrite.length) + 2 * np.std(dendrite.length))) & (dendrite['level'] > 2))]
 
-        print("New version works!")
+        self.stats.refresh_results(data, dendrite)
+
         self.n_levels = lvl - 1
         self.dendrite = dendrite
         self.results = data
