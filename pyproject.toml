@@ -1,6 +1,6 @@
 [project]
 name="wroclawtaxonomy"
-version="0.1.1"
+version="0.1.2"
 description="Function for creating dendrite using Wroclaw taxonomy"
 readme = "README.md"
 authors = [
