@@ -3,12 +3,12 @@ import math
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-import numpy.ma as ma
 import warnings
-import matplotlib.pyplot as plt
 from shapely.geometry import LineString
 from scipy.spatial.distance import cdist
-import wroclaw_taxonomy
+from wroclaw_taxonomy.Matrix import Matrix
+from wroclaw_taxonomy.Plotter import Plotter
+from wroclaw_taxonomy.Stats import Stats
 
 class Dendrite:
     """
@@ -80,7 +80,7 @@ class Dendrite:
         }
         self.data = data
         self.source_data = data.copy()
-        self.stats = wroclaw_taxonomy.Stats()
+        self.stats = Stats()
     
     def __str__(self):
         if self._processed:
@@ -98,28 +98,6 @@ class Dendrite:
             else:
                 crs = int("327" + str(zone))
             return crs
-        
-    def __create_matrix(self, data:gpd.GeoDataFrame, columns:str | list[str], normalize:bool):
-        for_matrix = data.loc[:,columns]
-        if normalize == True:
-            if any(item in ('lat', 'lon') for item in columns):
-                warnings.warn('You are normalizing coordinate values. It may slightly change results.')
-            for_matrix = for_matrix.apply(lambda x: (x-x.mean())/ x.std(), axis=0)
-        
-        distance_matrix = np.array(cdist(for_matrix, for_matrix, metric='euclidean'))
-        self.matrix = np.copy(distance_matrix)
-        return distance_matrix
-    
-    def __mask_matrix(self, distance_matrix:np.ndarray):
-        return ma.masked_array(distance_matrix, mask= distance_matrix==0)
-    
-    def __clear_matrix(self, data:gpd.GeoDataFrame, matrix:np.ndarray, column:str):
-        for i in range(0, data.shape[0]):
-            cluster = data.loc[i, column]
-            indexes = data.index[data[column] == cluster].tolist()
-            matrix[i, indexes] = 0
-            matrix[indexes, i] = 0
-        return matrix
     
     def __cluster_points(self, data:gpd.GeoDataFrame, lvl:int):
         for i in range(0, data.shape[0]):
@@ -129,12 +107,12 @@ class Dendrite:
                 data.loc[data[f'cluster{lvl}'] == data.loc[i, f'cluster{lvl-1}'], f'cluster{lvl}'] = data.loc[i, f'cluster{lvl}']
         return data
     
-    def __merge_clusters(self, data:gpd.GeoDataFrame, distance_matrix:np.ndarray):
+    def __merge_clusters(self, data:gpd.GeoDataFrame, distance_matrix:Matrix):
         lvl = 2
         while data[f'cluster{lvl-1}'].unique().shape[0] > 1:
             # get nearest neighbour of cluster
-            data[f'nearest{lvl}'] = np.argmin(self.__mask_matrix(distance_matrix), axis=1) + 1
-            data[f'nearest{lvl}_dist'] = np.min(self.__mask_matrix(distance_matrix), axis=1)
+            data[f'nearest{lvl}'] = np.argmin(distance_matrix.mask_matrix(), axis=1) + 1
+            data[f'nearest{lvl}_dist'] = np.min(distance_matrix.mask_matrix(), axis=1)
 
             for i in data[f'cluster{lvl-1}'].unique():
                 cluster = data.loc[data[f'cluster{lvl-1}'] == i, :]
@@ -152,7 +130,7 @@ class Dendrite:
             # grouping clusters into bigger ones
             data = self.__cluster_points(data, lvl)
             # clearing distance matrix
-            distance_matrix = self.__clear_matrix(data, distance_matrix, f'cluster{lvl}')
+            distance_matrix.clear_matrix(data, f'cluster{lvl}')
             lvl += 1
         return (data, lvl)
     
@@ -199,16 +177,16 @@ class Dendrite:
         assert isinstance(columns, list), 'Argument columns has to be a list'
         
         # create distance matrix
-        distance_matrix = self.__create_matrix(data, columns, normalize)
+        distance_matrix = Matrix(data, columns, normalize)
         # get nearest neighbours
-        nn = np.argmin(self.__mask_matrix(distance_matrix), axis=1) + 1
+        nn = np.argmin(distance_matrix.mask_matrix(), axis=1) + 1
         data['nearest1'] = nn
         data['cluster1'] = nn
 
         # grouping into clusters
         data = self.__cluster_points(data, 1)
         # clearing matrix
-        distance_matrix = self.__clear_matrix(data, distance_matrix, 'cluster1')
+        distance_matrix.clear_matrix(data, 'cluster1')
 
         # repeating clustering until getting one big cluster
         data, lvl = self.__merge_clusters(data, distance_matrix)
@@ -268,10 +246,10 @@ class Dendrite:
             warnings.warn('Dendrite has not been calculated yet!')
             return None
     
-    def create_plotter(self) -> wroclaw_taxonomy.Plotter:
+    def create_plotter(self) -> Plotter:
         """
         Creates Plotter instance from calculated dendrite.
         """
-        plotter = wroclaw_taxonomy.Plotter(self)
+        plotter = Plotter(self)
         return plotter
  
